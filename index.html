@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Rural Handmade Marketplace</title>
+  <style>
+    body {
+      font-family: "Poppins", sans-serif;
+      background: linear-gradient(135deg, #fdfbfb, #ebedee);
+      margin: 0;
+      color: #333;
+    }
+
+    /* Navbar */
+    header {
+      background: #f8f4ff;
+      padding: 18px 30px;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.05);
+      text-align: center;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 26px;
+      color: #6a4caf;
+    }
+    header p {
+      margin: 4px 0 0;
+      font-size: 14px;
+      color: #777;
+    }
+
+    /* Form Section */
+    .form-section {
+      max-width: 600px;
+      margin: 30px auto;
+      background: #fff;
+      padding: 25px;
+      border-radius: 14px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    }
+    .form-section h2 {
+      text-align: center;
+      margin-bottom: 15px;
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 12px;
+      margin: 8px 0;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      font-size: 14px;
+      background: #fafafa;
+      transition: 0.3s;
+    }
+    input:focus, textarea:focus {
+      border-color: #b4a7ff;
+      outline: none;
+      background: #fff;
+    }
+
+    button {
+      padding: 12px 18px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.3s ease;
+    }
+
+    #predictBtn {
+      background: #d9d4f7;
+      color: #4b3f72;
+      margin-right: 10px;
+    }
+    #predictBtn:hover { background: #c7bdf5; }
+
+    #saveBtn {
+      background: #c6f7d0;
+      color: #255d36;
+    }
+    #saveBtn:hover { background: #aef5bc; }
+
+    /* Product Grid */
+    .product-section {
+      max-width: 1000px;
+      margin: 40px auto;
+      padding: 0 20px;
+    }
+    .product-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 20px;
+    }
+
+    .product-card {
+      background: #fff;
+      border: 1px solid #f0e8f7;
+      border-radius: 14px;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+      overflow: hidden;
+      transition: 0.3s;
+    }
+    .product-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 6px 15px rgba(0,0,0,0.08);
+    }
+
+    .product-img {
+      background: #f6f3fb;
+      height: 150px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .product-img img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .product-info {
+      padding: 14px;
+    }
+    .product-info h3 {
+      margin: 0 0 6px;
+      font-size: 18px;
+      color: #444;
+    }
+    .product-info p {
+      margin: 0;
+      font-size: 13px;
+      color: #666;
+      height: 40px;
+      overflow: hidden;
+    }
+    .product-price {
+      margin-top: 8px;
+      font-weight: bold;
+      color: #5d3ea4;
+    }
+
+    .product-actions {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 14px 14px;
+    }
+
+    .edit-btn {
+      background: #fce1b6;
+      color: #744c1e;
+      padding: 6px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      border: none;
+    }
+    .edit-btn:hover { background: #fbd49b; }
+
+    .delete-btn {
+      background: #f9caca;
+      color: #a12222;
+      padding: 6px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      border: none;
+    }
+    .delete-btn:hover { background: #f7b0b0; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>🌸 Rural Handmade Marketplace</h1>
+    <p>Empowering artisans with AI pricing & digital sales</p>
+  </header>
+
+  <!-- ✅ FORM -->
+  <div class="form-section">
+    <h2>Upload Your Handmade Product</h2>
+
+    <input type="text" id="name" placeholder="Product Name">
+    <textarea id="desc" placeholder="Short Description"></textarea>
+
+    <!-- ✅ Image upload -->
+    <label>Upload Product Image:</label>
+    <input type="file" id="productImage" accept="image/*">
+    <div id="preview" style="margin:10px 0;text-align:center;"></div>
+
+    <input type="number" id="price" placeholder="AI Predicted Price" readonly>
+
+    <div style="text-align:center; margin-top:10px;">
+      <button id="predictBtn">🔮 Predict Price</button>
+      <button id="saveBtn">💾 Save Product</button>
+    </div>
+  </div>
+
+  <!-- ✅ PRODUCT LIST -->
+  <section class="product-section">
+    <h2 style="text-align:center;">🛍️ Available Products</h2>
+    <div id="product-list" class="product-grid"></div>
+  </section>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
+    import { 
+      getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc 
+    } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
+    import { 
+      getStorage, ref, uploadBytes, getDownloadURL 
+    } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-storage.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCttDmc8wi0GNU17pSE6k8jP-OtyCKubPs",
+      authDomain: "empowerment-6ec51.firebaseapp.com",
+      projectId: "empowerment-6ec51",
+      storageBucket: "empowerment-6ec51.appspot.com",
+      messagingSenderId: "42467695122",
+      appId: "1:42467695122:web:cc7b581561176e3af456cb",
+      measurementId: "G-L6Z945LDBV"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const storage = getStorage(app);
+
+    const predictBtn = document.getElementById("predictBtn");
+    const saveBtn = document.getElementById("saveBtn");
+    const priceField = document.getElementById("price");
+    const imageInput = document.getElementById("productImage");
+    const previewDiv = document.getElementById("preview");
+
+    let selectedImageFile = null;
+    let editProductId = null;
+
+    // ✅ Preview image before upload
+    imageInput.addEventListener("change", () => {
+      if (imageInput.files.length > 0) {
+        selectedImageFile = imageInput.files[0];
+        const reader = new FileReader();
+        reader.onload = e => {
+          previewDiv.innerHTML = `<img src="${e.target.result}" style="width:120px; border-radius:8px;">`;
+        };
+        reader.readAsDataURL(selectedImageFile);
+      }
+    });
+
+    // ✅ Predict Price using AI API
+    predictBtn.addEventListener("click", async () => {
+      let desc = document.getElementById("desc").value;
+      if (!desc.trim()) {
+        alert("Please enter a product description!");
+        return;
+      }
+      priceField.value = "Predicting...";
+      try {
+        const res = await fetch("https://ansheekav4444-price-prediction-api.hf.space/predict", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ description: desc })
+        });
+        const data = await res.json();
+        priceField.value = data.predicted_price;
+      } catch (err) {
+        console.error(err);
+        alert("AI Prediction failed. Try again.");
+        priceField.value = "";
+      }
+    });
+
+    // ✅ Upload Image to Firebase Storage
+    async function uploadImageAndGetURL(file) {
+      const storageRef = ref(storage, "product_images/" + Date.now() + "_" + file.name);
+      await uploadBytes(storageRef, file);
+      return await getDownloadURL(storageRef);
+    }
+
+    // ✅ Save or Update Product
+    saveBtn.addEventListener("click", async () => {
+      let name = document.getElementById("name").value;
+      let desc = document.getElementById("desc").value;
+      let price = priceField.value;
+
+      if (!name.trim() || !desc.trim() || !price.trim()) {
+        alert("Fill product name, description, and predict price first!");
+        return;
+      }
+
+      // let imageUrl = "";
+
+      // if (selectedImageFile) {
+      //   imageUrl = await uploadImageAndGetURL(selectedImageFile);
+      // }
+      let imageUrl = "https://via.placeholder.com/150"; // dummy image URL
+
+
+      try {
+        if (editProductId) {
+          const productRef = doc(db, "products", editProductId);
+          await updateDoc(productRef, { name, description: desc, price, imageUrl });
+          alert("✅ Product Updated!");
+          editProductId = null;
+          saveBtn.textContent = "💾 Save Product";
+        } else {
+          await addDoc(collection(db, "products"), { name, description: desc, price, imageUrl });
+          alert("✅ Product Saved!");
+        }
+
+        document.getElementById("name").value = "";
+        document.getElementById("desc").value = "";
+        priceField.value = "";
+        previewDiv.innerHTML = "";
+        selectedImageFile = null;
+
+        fetchProducts();
+      } catch (e) {
+        console.error("Error:", e);
+      }
+    });
+
+    // ✅ Fetch products
+    async function fetchProducts() {
+      let listDiv = document.getElementById("product-list");
+      listDiv.innerHTML = "";
+
+      const querySnapshot = await getDocs(collection(db, "products"));
+      querySnapshot.forEach((docSnap) => {
+        let data = docSnap.data();
+        let productId = docSnap.id;
+
+        let imgTag = data.imageUrl 
+          ? `<img src="${data.imageUrl}" alt="${data.name}">` 
+          : `🧺`;
+
+        let productHTML = `
+          <div class="product-card">
+            <div class="product-img">${imgTag}</div>
+            <div class="product-info">
+              <h3>${data.name}</h3>
+              <p>${data.description}</p>
+              <div class="product-price">₹${data.price}</div>
+            </div>
+            <div class="product-actions">
+              <button class="edit-btn" onclick="editProduct('${productId}', '${data.name}', '${data.description}', '${data.price}')">✏️ Edit</button>
+              <button class="delete-btn" onclick="deleteProduct('${productId}')">🗑️ Delete</button>
+            </div>
+          </div>
+        `;
+        listDiv.innerHTML += productHTML;
+      });
+    }
+
+    // ✅ Delete Product
+    window.deleteProduct = async function(productId) {
+      if (confirm("Are you sure you want to delete this product?")) {
+        await deleteDoc(doc(db, "products", productId));
+        alert("❌ Product Deleted!");
+        fetchProducts();
+      }
+    }
+
+    // ✅ Edit Product
+    window.editProduct = function(productId, name, desc, price) {
+      document.getElementById("name").value = name;
+      document.getElementById("desc").value = desc;
+      document.getElementById("price").value = price;
+      editProductId = productId;
+      saveBtn.textContent = "✅ Update Product";
+      alert("✏️ Edit mode enabled. Modify fields & click Update Product");
+    }
+
+    fetchProducts();
+  </script>
+</body>
+</html>
