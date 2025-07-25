@@ -19,7 +19,7 @@
     header h1 { margin: 0; font-size: 26px; color: #6a4caf; }
     header p { margin: 4px 0 0; font-size: 14px; color: #777; }
 
-    .auth-section, .form-section, .cart-section, .wishlist-section, .checkout-section {
+    .auth-section, .form-section {
       max-width: 600px;
       margin: 20px auto;
       background: #fff;
@@ -36,7 +36,7 @@
       border-radius: 10px;
       font-size: 14px;
     }
-    .auth-section button, .form-section button, .cart-section button, .wishlist-section button, .checkout-section button {
+    .auth-section button, .form-section button {
       padding: 10px 16px;
       margin: 8px 4px;
       border: none;
@@ -103,6 +103,40 @@
     .cart-btn { background: #c6f7d0; color: #255d36; padding: 6px 10px; border-radius: 8px; cursor: pointer; border: none; }
     .wishlist-btn { background: #ffe6f0; color: #8a004f; padding: 6px 10px; border-radius: 8px; cursor: pointer; border: none; }
 
+    /* Modal/Dialog Styles */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.5);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-content {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      width: 90%;
+      max-width: 600px;
+      max-height: 80vh;
+      overflow-y: auto;
+      padding: 20px;
+      position: relative;
+    }
+    .close-modal {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: none;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      color: #777;
+    }
     .list-item {
       border-bottom: 1px solid #eee;
       padding: 10px;
@@ -141,10 +175,34 @@
       color: #5d3ea4;
       margin-top: 5px;
     }
-    .checkout-section input, .checkout-section select {
-      width: 95%;
-      padding: 10px;
-      margin: 6px 0;
+    .checkout-btn {
+      padding: 10px 16px;
+      background: #6a4caf;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 15px;
+      width: 100%;
+    }
+    .modal-footer {
+      margin-top: 20px;
+      text-align: right;
+    }
+    .modal-footer button {
+      padding: 8px 16px;
+      margin-left: 10px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+    }
+    .modal-footer .cancel-btn {
+      background: #f8d7da;
+      color: #721c24;
+    }
+    .modal-footer .confirm-btn {
+      background: #d4edda;
+      color: #155724;
     }
 
     /* NEW STYLES */
@@ -403,12 +461,52 @@
 
 <div id="toastContainer"></div>
 
+<!-- Cart Modal -->
+<div id="cartModal" class="modal">
+  <div class="modal-content">
+    <button class="close-modal" onclick="hideCart()">&times;</button>
+    <h2>🛒 Your Cart</h2>
+    <div id="cartItems"></div>
+    <p id="cartTotal" style="font-weight:bold; text-align: right;"></p>
+    <button class="checkout-btn" onclick="checkout()">Proceed to Checkout</button>
+  </div>
+</div>
+
+<!-- Wishlist Modal -->
+<div id="wishlistModal" class="modal">
+  <div class="modal-content">
+    <button class="close-modal" onclick="hideWishlist()">&times;</button>
+    <h2>💖 Your Wishlist</h2>
+    <div id="wishlistItems"></div>
+  </div>
+</div>
+
+<!-- Checkout Modal -->
+<div id="checkoutModal" class="modal">
+  <div class="modal-content">
+    <button class="close-modal" onclick="cancelCheckout()">&times;</button>
+    <h2>🏠 Delivery Details</h2>
+    <input type="text" id="address" placeholder="Full Address">
+    <input type="text" id="pincode" placeholder="Pincode">
+    <select id="paymentMethod">
+      <option value="cod">Cash on Delivery</option>
+      <option value="upi">UPI Payment</option>
+    </select>
+    <input type="text" id="upiId" placeholder="Enter UPI ID" style="display:none;">
+    <div class="modal-footer">
+      <button class="cancel-btn" onclick="cancelCheckout()">Cancel</button>
+      <button class="confirm-btn" onclick="confirmOrder()">✅ Confirm Order</button>
+    </div>
+  </div>
+</div>
+
+
 <header>
   <h1>🌸 Rural Handmade Marketplace</h1>
   <p>Empowering artisans with AI pricing & digital sales</p>
   <div style="margin-top:10px;">
-    <button onclick="showCart()">🛒 View Cart</button>
-    <button onclick="showWishlist()">💖 View Wishlist</button>
+    <button onclick="showCart()" id="cartButton">🛒 View Cart (0)</button>
+    <button onclick="showWishlist()" id="wishlistButton">💖 View Wishlist (0)</button>
   </div>
 </header>
 
@@ -423,6 +521,85 @@
 <div style="text-align:center; display:none;" id="logoutSection">
   <p>✅ Logged in as <span id="userEmail"></span></p>
   <button class="logout-btn" id="logoutBtn">Logout</button>
+</div>
+<div class="form-section" id="productForm" style="display:none;">
+  <h2 style="text-align: center; margin-bottom: 20px;">Upload Your Handmade Product</h2>
+  
+  <div class="form-group">
+    <label for="name">Product Name</label>
+    <input type="text" id="name" placeholder="e.g., Handwoven Cotton Scarf">
+  </div>
+  
+  <div class="form-group">
+    <label for="desc">Description</label>
+    <textarea id="desc" placeholder="Describe your product in detail"></textarea>
+  </div>
+  
+  <div class="form-group">
+    <label for="categorySelect">Category</label>
+    <select id="categorySelect">
+      <option value="clothing">Clothing</option>
+      <option value="art">Art</option>
+      <option value="decor">Home Decor</option>
+      <option value="jewelry">Jewelry</option>
+      <option value="toys">Toys</option>
+    </select>
+  </div>
+  
+  <div class="form-row">
+    <div class="form-group">
+      <label for="materials">Materials Used</label>
+      <input type="text" id="materials" placeholder="e.g., Cotton, Silk, Wood">
+    </div>
+    <div class="form-group">
+      <label for="timeSpent">Time Spent (hours)</label>
+      <input type="number" id="timeSpent" placeholder="2" min="0.5" step="0.5">
+    </div>
+  </div>
+  
+  <div class="form-row">
+    <div class="form-group">
+      <label for="complexity">Complexity</label>
+      <select id="complexity">
+        <option value="low">Low</option>
+        <option value="medium" selected>Medium</option>
+        <option value="high">High</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label for="size">Size</label>
+      <select id="size">
+        <option value="small">Small</option>
+        <option value="medium" selected>Medium</option>
+        <option value="large">Large</option>
+        <option value="xlarge">Extra Large</option>
+      </select>
+    </div>
+  </div>
+  
+  <div class="form-group">
+    <label for="productImage">Product Images</label>
+    <input type="file" id="productImage" accept="image/*" multiple>
+  </div>
+  
+  <div class="image-preview-container" id="previewContainer"></div>
+  <div id="uploadStatus"></div>
+  
+  <div class="price-prediction-container">
+    <div class="form-group">
+      <label for="price">Suggested Price</label>
+      <input type="number" id="price" placeholder="AI Predicted Price" readonly>
+    </div>
+    <div id="priceBreakdown" style="display:none;">
+      <h4 style="margin-bottom: 10px;">Price Breakdown:</h4>
+      <div id="breakdownDetails"></div>
+    </div>
+  </div>
+  
+  <div style="display: flex; gap: 10px; margin-top: 20px;">
+    <button id="predictBtn" style="flex: 1;">🔮 Predict Price</button>
+    <button id="saveBtn" style="flex: 1;">💾 Save Product</button>
+  </div>
 </div>
 
 <div class="form-section" id="productForm" style="display:none;">
@@ -443,6 +620,61 @@
     <button id="saveBtn">💾 Save Product</button>
   </div>
 </div>
+<div class="form-section" id="productForm" style="display:none;">
+    <h2>Upload Your Handmade Product</h2>
+    <input type="text" id="name" placeholder="Product Name">
+    <textarea id="desc" placeholder="Short Description"></textarea>
+    <select id="categorySelect">
+      <option value="clothing">Clothing</option>
+      <option value="art">Art</option>
+      <option value="decor">Home Decor</option>
+      <option value="jewelry">Jewelry</option>
+      <option value="toys">Toys</option>
+    </select>
+    <div class="form-row">
+      <div>
+        <label for="materials">Materials Used:</label>
+        <input type="text" id="materials" placeholder="Cotton, Silk, Wood, etc.">
+      </div>
+      <div>
+        <label for="timeSpent">Time Spent (hours):</label>
+        <input type="number" id="timeSpent" placeholder="2" min="0.5" step="0.5">
+      </div>
+    </div>
+    <div class="form-row">
+      <div>
+        <label for="complexity">Complexity:</label>
+        <select id="complexity">
+          <option value="low">Low</option>
+          <option value="medium" selected>Medium</option>
+          <option value="high">High</option>
+        </select>
+      </div>
+      <div>
+        <label for="size">Size:</label>
+        <select id="size">
+          <option value="small">Small</option>
+          <option value="medium" selected>Medium</option>
+          <option value="large">Large</option>
+          <option value="xlarge">Extra Large</option>
+        </select>
+      </div>
+    </div>
+    <input type="file" id="productImage" accept="image/*" multiple><br>
+    <div class="image-preview-container" id="previewContainer"></div>
+    <div id="uploadStatus"></div>
+    <div class="price-prediction-container">
+      <input type="number" id="price" placeholder="AI Predicted Price" readonly>
+      <div id="priceBreakdown" style="display:none;">
+        <h4>Price Breakdown:</h4>
+        <div id="breakdownDetails"></div>
+      </div>
+    </div>
+    <div style="margin-top:10px;">
+      <button id="predictBtn">🔮 Predict Price</button>
+      <button id="saveBtn">💾 Save Product</button>
+    </div>
+  </div>
 
 
 <section class="product-section" style="display:none;" id="productSection">
@@ -477,33 +709,6 @@
   <div class="pagination" id="pagination"></div>
 </section>
 
-<div class="cart-section" style="display:none;" id="cartSection">
-  <h2>🛒 Your Cart</h2>
-  <div id="cartItems"></div>
-  <p id="cartTotal" style="font-weight:bold;"></p>
-  <button onclick="checkout()">Proceed to Checkout</button>
-  <button onclick="hideCart()">Close</button>
-</div>
-
-<div class="wishlist-section" style="display:none;" id="wishlistSection">
-  <h2>💖 Your Wishlist</h2>
-  <div id="wishlistItems"></div>
-  <button onclick="hideWishlist()">Close</button>
-</div>
-
-<div class="checkout-section" style="display:none;" id="checkoutSection">
-  <h2>🏠 Delivery Details</h2>
-  <input type="text" id="address" placeholder="Full Address">
-  <input type="text" id="pincode" placeholder="Pincode">
-  <select id="paymentMethod">
-    <option value="cod">Cash on Delivery</option>
-    <option value="upi">UPI Payment</option>
-  </select>
-  <input type="text" id="upiId" placeholder="Enter UPI ID" style="display:none;">
-  <button onclick="confirmOrder()">✅ Confirm Order</button>
-  <button onclick="cancelCheckout()">Cancel</button>
-</div>
-
 <!-- Chatbot HTML -->
 <div class="chatbot-container">
   <div class="chatbot-toggle" id="chatbotToggle">💬</div>
@@ -530,6 +735,244 @@
   import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, setDoc, getDoc } 
     from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
 
+    
+  // Add these new style rules
+  const style = document.createElement('style');
+  style.textContent = `
+    .form-row {
+      display: flex;
+      gap: 15px;
+      margin: 10px 0;
+    }
+    .form-row > div {
+      flex: 1;
+    }
+    .form-row label {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 14px;
+      color: #555;
+    }
+    .form-row input, .form-row select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+    }
+    .price-prediction-container {
+      margin: 15px 0;
+    }
+    #priceBreakdown {
+      background: #f8f9fa;
+      padding: 12px;
+      border-radius: 8px;
+      margin-top: 10px;
+      border: 1px solid #eee;
+    }
+    #breakdownDetails {
+      font-size: 14px;
+    }
+    #breakdownDetails div {
+      margin: 5px 0;
+      display: flex;
+      justify-content: space-between;
+    }
+    .confidence-meter {
+      height: 6px;
+      background: #e9ecef;
+      border-radius: 3px;
+      margin-top: 5px;
+      overflow: hidden;
+    }
+    .confidence-level {
+      height: 100%;
+      background: #28a745;
+      width: 0%;
+      transition: width 0.5s ease;
+    }
+  `;
+  document.head.appendChild(style);
+
+  // Enhanced price prediction function
+  async function predictPrice() {
+    const desc = document.getElementById("desc").value.trim();
+    const category = document.getElementById("categorySelect").value;
+    const materials = document.getElementById("materials").value.trim();
+    const timeSpent = parseFloat(document.getElementById("timeSpent").value) || 1;
+    const complexity = document.getElementById("complexity").value;
+    const size = document.getElementById("size").value;
+    
+    if (!desc) {
+      showToast("Please enter description!", "error");
+      return;
+    }
+    
+    document.getElementById("price").value = "Predicting...";
+    document.getElementById("priceBreakdown").style.display = "none";
+    document.getElementById("predictBtn").innerHTML = `<span class="spinner"></span> Predicting`;
+    
+    try {
+      // First try our enhanced local prediction
+      const localPrediction = calculateLocalPricePrediction(category, materials, timeSpent, complexity, size);
+      
+      // Then try the AI API as fallback
+      let aiPrediction = null;
+      try {
+        const res = await fetch("https://ansheekav4444-price-prediction-api.hf.space/predict", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ 
+            description: desc,
+            category,
+            materials,
+            time_spent: timeSpent,
+            complexity,
+            size
+          })
+        });
+        const data = await res.json();
+        aiPrediction = data.predicted_price;
+      } catch (err) {
+        console.log("AI API failed, using local prediction", err);
+      }
+      
+      // Combine results with preference for AI prediction if available
+      const finalPrice = aiPrediction !== null ? 
+        Math.round((aiPrediction * 0.7 + localPrediction * 0.3)) : 
+        localPrediction;
+      
+      document.getElementById("price").value = finalPrice;
+      
+      // Show price breakdown
+      showPriceBreakdown({
+        category,
+        materials,
+        timeSpent,
+        complexity,
+        size,
+        localPrediction,
+        aiPrediction: aiPrediction,
+        finalPrice
+      });
+      
+    } catch (err) {
+      console.error("Price prediction error:", err);
+      showToast("Price prediction failed. Please enter a price manually.", "error");
+      document.getElementById("price").removeAttribute("readonly");
+    } finally {
+      document.getElementById("predictBtn").textContent = "🔮 Predict Price";
+    }
+  }
+
+  function calculateLocalPricePrediction(category, materials, timeSpent, complexity, size) {
+    // Base prices by category
+    const categoryBasePrices = {
+      clothing: 500,
+      art: 800,
+      decor: 600,
+      jewelry: 700,
+      toys: 400
+    };
+    
+    // Material multipliers (premium materials increase price)
+    const materialMultipliers = {
+      cotton: 1.0,
+      silk: 1.8,
+      wool: 1.5,
+      wood: 1.2,
+      metal: 1.7,
+      ceramic: 1.4,
+      glass: 1.6,
+      leather: 2.0,
+      plastic: 0.8
+    };
+    
+    // Complexity multipliers
+    const complexityMultipliers = {
+      low: 0.8,
+      medium: 1.0,
+      high: 1.5
+    };
+    
+    // Size multipliers
+    const sizeMultipliers = {
+      small: 0.7,
+      medium: 1.0,
+      large: 1.4,
+      xlarge: 2.0
+    };
+    
+    // Hourly rate based on skill level (simplified)
+    const hourlyRate = 150; // Base rate
+    
+    // Calculate material score
+    let materialScore = 1;
+    if (materials) {
+      const materialList = materials.toLowerCase().split(/[,&]+/).map(m => m.trim());
+      materialScore = materialList.reduce((sum, mat) => {
+        return sum + (materialMultipliers[mat] || 1.0);
+      }, 0) / materialList.length;
+    }
+    
+    // Calculate base price
+    let basePrice = categoryBasePrices[category] || 500;
+    
+    // Calculate final price
+    let price = basePrice * materialScore * complexityMultipliers[complexity] * sizeMultipliers[size];
+    
+    // Add time component (minimum 1 hour)
+    const effectiveTime = Math.max(1, timeSpent);
+    price += effectiveTime * hourlyRate * complexityMultipliers[complexity];
+    
+    // Round to nearest 50
+    price = Math.round(price / 50) * 50;
+    
+    return price;
+  }
+
+  function showPriceBreakdown(details) {
+    const breakdownDiv = document.getElementById("breakdownDetails");
+    breakdownDiv.innerHTML = "";
+    
+    // Add breakdown items
+    addBreakdownItem(breakdownDiv, "Category Base", `₹${details.localPrediction * 0.4}`);
+    addBreakdownItem(breakdownDiv, "Materials", `₹${details.localPrediction * 0.3}`);
+    addBreakdownItem(breakdownDiv, "Time & Skill", `₹${details.localPrediction * 0.3}`);
+    
+    if (details.aiPrediction) {
+      breakdownDiv.innerHTML += `<div style="margin-top:10px;border-top:1px dashed #ddd;padding-top:10px;"></div>`;
+      addBreakdownItem(breakdownDiv, "AI Suggestion", `₹${details.aiPrediction}`);
+    }
+    
+    breakdownDiv.innerHTML += `<div style="margin-top:10px;border-top:1px solid #ddd;padding-top:10px;font-weight:bold;"></div>`;
+    addBreakdownItem(breakdownDiv, "Recommended Price", `₹${details.finalPrice}`);
+    
+    // Add confidence meter (simplified)
+    const confidence = details.aiPrediction ? 85 : 70;
+    breakdownDiv.innerHTML += `
+      <div style="margin-top:15px;">
+        <div>Confidence: ${confidence}%</div>
+        <div class="confidence-meter">
+          <div class="confidence-level" style="width:${confidence}%"></div>
+        </div>
+      </div>
+    `;
+    
+    document.getElementById("priceBreakdown").style.display = "block";
+  }
+
+  function addBreakdownItem(container, label, value) {
+    container.innerHTML += `
+      <div>
+        <span>${label}:</span>
+        <span>${value}</span>
+      </div>
+    `;
+  }
+
+  // Update the predict button event listener
+  document.getElementById("predictBtn").addEventListener("click", predictPrice);
+
   const firebaseConfig = {
     apiKey: "AIzaSyCttDmc8wi0GNU17pSE6k8jP-OtyCKubPs",
     authDomain: "empowerment-6ec51.firebaseapp.com",
@@ -548,9 +991,12 @@
   const logoutSection = document.getElementById("logoutSection");
   const productForm = document.getElementById("productForm");
   const productSection = document.getElementById("productSection");
-  const cartSectionDiv = document.getElementById("cartSection");
-  const wishlistSectionDiv = document.getElementById("wishlistSection");
   const userEmailSpan = document.getElementById("userEmail");
+
+  // Modal elements
+  const cartModal = document.getElementById("cartModal");
+  const wishlistModal = document.getElementById("wishlistModal");
+  const checkoutModal = document.getElementById("checkoutModal");
 
   let currentUserEmail = null;
   let allProducts = [];
@@ -631,8 +1077,9 @@
       logoutSection.style.display = "none";
       productForm.style.display = "none";
       productSection.style.display = "none";
-      cartSectionDiv.style.display = "none";
-      wishlistSectionDiv.style.display = "none";
+      cartModal.style.display = "none";
+      wishlistModal.style.display = "none";
+      checkoutModal.style.display = "none";
     }
   });
 
@@ -843,8 +1290,8 @@
       `;
     });
   }
-  //part 4
-    function renderStars(rating) {
+
+  function renderStars(rating) {
     const fullStars = Math.floor(rating);
     const hasHalfStar = rating % 1 >= 0.5;
     let stars = '';
@@ -1069,32 +1516,32 @@
     const cartCount = userCart.reduce((sum, item) => sum + item.quantity, 0);
     const wishlistCount = userWishlist.length;
     
-    document.querySelector('button[onclick="showCart()"]').textContent = 
+    document.getElementById('cartButton').textContent = 
       `🛒 View Cart (${cartCount})`;
-    document.querySelector('button[onclick="showWishlist()"]').textContent = 
+    document.getElementById('wishlistButton').textContent = 
       `💖 View Wishlist (${wishlistCount})`;
   }
 
   window.showCart = function() {
-    cartSectionDiv.style.display = "block";
-    wishlistSectionDiv.style.display = "none";
-    checkoutSection.style.display = "none";
+    cartModal.style.display = "flex";
+    wishlistModal.style.display = "none";
+    checkoutModal.style.display = "none";
     renderCart();
   };
 
   window.hideCart = function() {
-    cartSectionDiv.style.display = "none";
+    cartModal.style.display = "none";
   };
 
   window.showWishlist = function() {
-    wishlistSectionDiv.style.display = "block";
-    cartSectionDiv.style.display = "none";
-    checkoutSection.style.display = "none";
+    wishlistModal.style.display = "flex";
+    cartModal.style.display = "none";
+    checkoutModal.style.display = "none";
     renderWishlist();
   };
 
   window.hideWishlist = function() {
-    wishlistSectionDiv.style.display = "none";
+    wishlistModal.style.display = "none";
   };
 
   function renderCart() {
@@ -1213,8 +1660,8 @@
       return;
     }
     
-    checkoutSection.style.display = "block";
-    cartSectionDiv.style.display = "none";
+    checkoutModal.style.display = "flex";
+    cartModal.style.display = "none";
     
     // Show/hide UPI field based on payment method
     document.getElementById("paymentMethod").addEventListener("change", function() {
@@ -1224,8 +1671,8 @@
   };
 
   window.cancelCheckout = function() {
-    checkoutSection.style.display = "none";
-    cartSectionDiv.style.display = "block";
+    checkoutModal.style.display = "none";
+    cartModal.style.display = "flex";
   };
 
   window.confirmOrder = async function() {
@@ -1269,7 +1716,7 @@
       
       showToast("Order placed successfully!");
       updateCartWishlistCounts();
-      checkoutSection.style.display = "none";
+      checkoutModal.style.display = "none";
       document.getElementById("address").value = "";
       document.getElementById("pincode").value = "";
       document.getElementById("upiId").value = "";
