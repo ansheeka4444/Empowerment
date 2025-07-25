@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Rural Handmade Marketplace</title>
+  <title>🌸 Rural Handmade Marketplace</title>
   <style>
     body {
       font-family: "Poppins", sans-serif;
@@ -10,89 +10,68 @@
       margin: 0;
       color: #333;
     }
-
-    /* Navbar */
     header {
       background: #f8f4ff;
       padding: 18px 30px;
       box-shadow: 0 3px 8px rgba(0,0,0,0.05);
       text-align: center;
     }
-    header h1 {
-      margin: 0;
-      font-size: 26px;
-      color: #6a4caf;
-    }
-    header p {
-      margin: 4px 0 0;
-      font-size: 14px;
-      color: #777;
-    }
+    header h1 { margin: 0; font-size: 26px; color: #6a4caf; }
+    header p { margin: 4px 0 0; font-size: 14px; color: #777; }
 
-    /* Form Section */
-    .form-section {
+    .auth-section, .form-section, .cart-section, .wishlist-section, .checkout-section {
       max-width: 600px;
-      margin: 30px auto;
+      margin: 20px auto;
       background: #fff;
-      padding: 25px;
-      border-radius: 14px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-    }
-    .form-section h2 {
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
       text-align: center;
-      margin-bottom: 15px;
     }
-
-    input, textarea {
-      width: 100%;
+    .auth-section input, .form-section input, .form-section textarea, select {
+      width: 90%;
       padding: 12px;
       margin: 8px 0;
       border: 1px solid #ddd;
       border-radius: 10px;
       font-size: 14px;
-      background: #fafafa;
-      transition: 0.3s;
     }
-    input:focus, textarea:focus {
-      border-color: #b4a7ff;
-      outline: none;
-      background: #fff;
-    }
-
-    button {
-      padding: 12px 18px;
+    .auth-section button, .form-section button, .cart-section button, .wishlist-section button, .checkout-section button {
+      padding: 10px 16px;
+      margin: 8px 4px;
       border: none;
-      border-radius: 10px;
+      border-radius: 8px;
       cursor: pointer;
       font-size: 14px;
-      transition: all 0.3s ease;
     }
+    .login-btn { background: #cce5ff; color: #004085; }
+    .signup-btn { background: #d4edda; color: #155724; }
+    .logout-btn { background: #f8d7da; color: #721c24; }
+    #predictBtn { background: #d9d4f7; color: #4b3f72; }
+    #saveBtn { background: #c6f7d0; color: #255d36; }
 
-    #predictBtn {
-      background: #d9d4f7;
-      color: #4b3f72;
-      margin-right: 10px;
-    }
-    #predictBtn:hover { background: #c7bdf5; }
-
-    #saveBtn {
-      background: #c6f7d0;
-      color: #255d36;
-    }
-    #saveBtn:hover { background: #aef5bc; }
-
-    /* Product Grid */
     .product-section {
       max-width: 1000px;
-      margin: 40px auto;
+      margin: 30px auto;
       padding: 0 20px;
+    }
+    .filters {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .filters select, .filters input {
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
     }
     .product-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
       gap: 20px;
     }
-
     .product-card {
       background: #fff;
       border: 1px solid #f0e8f7;
@@ -100,276 +79,1368 @@
       box-shadow: 0 3px 10px rgba(0,0,0,0.05);
       overflow: hidden;
       transition: 0.3s;
+      position: relative;
     }
     .product-card:hover {
       transform: translateY(-4px);
       box-shadow: 0 6px 15px rgba(0,0,0,0.08);
     }
-
-    .product-img {
-      background: #f6f3fb;
+    .product-img img {
+      width: 100%;
       height: 150px;
+      object-fit: cover;
+    }
+    .product-info { padding: 14px; }
+    .product-info h3 { margin: 0 0 6px; font-size: 18px; color: #444; }
+    .product-info p { margin: 0; font-size: 13px; color: #666; height: 40px; overflow: hidden; }
+    .product-price { margin-top: 8px; font-weight: bold; color: #5d3ea4; }
+    .product-actions {
+      display: flex; flex-wrap: wrap;
+      justify-content: space-between; padding: 10px 14px 14px;
+    }
+    .edit-btn { background: #fce1b6; color: #744c1e; padding: 6px 10px; border-radius: 8px; cursor: pointer; border: none; }
+    .delete-btn { background: #f9caca; color: #a12222; padding: 6px 10px; border-radius: 8px; cursor: pointer; border: none; }
+    .cart-btn { background: #c6f7d0; color: #255d36; padding: 6px 10px; border-radius: 8px; cursor: pointer; border: none; }
+    .wishlist-btn { background: #ffe6f0; color: #8a004f; padding: 6px 10px; border-radius: 8px; cursor: pointer; border: none; }
+
+    .list-item {
+      border-bottom: 1px solid #eee;
+      padding: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .quantity-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 5px 0;
+    }
+    .quantity-btn {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: none;
+      background: #f0e8f7;
+      cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      overflow: hidden;
     }
-    .product-img img {
+    .move-to-cart-btn {
+      background: #c6f7d0;
+      color: #255d36;
+      padding: 6px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      border: none;
+      margin-left: 5px;
+    }
+    .subtotal {
+      font-size: 14px;
+      color: #5d3ea4;
+      margin-top: 5px;
+    }
+    .checkout-section input, .checkout-section select {
+      width: 95%;
+      padding: 10px;
+      margin: 6px 0;
+    }
+
+    /* NEW STYLES */
+    .toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 12px 20px;
+      border-radius: 8px;
+      background: #4CAF50;
+      color: white;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      z-index: 1000;
+      opacity: 0;
+      transition: opacity 0.3s, transform 0.3s;
+      transform: translateY(-30px);
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .toast.error {
+      background: #f44336;
+    }
+    .toast.warning {
+      background: #ff9800;
+    }
+    
+    .spinner {
+      border: 3px solid rgba(0,0,0,0.1);
+      border-radius: 50%;
+      border-top: 3px solid #6a4caf;
+      width: 20px;
+      height: 20px;
+      animation: spin 1s linear infinite;
+      display: inline-block;
+      vertical-align: middle;
+      margin-left: 8px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .image-preview-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 10px 0;
+    }
+    .image-preview {
+      position: relative;
+      width: 80px;
+      height: 80px;
+    }
+    .image-preview img {
       width: 100%;
       height: 100%;
       object-fit: cover;
+      border-radius: 8px;
+    }
+    .remove-image {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: #f44336;
+      color: white;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      cursor: pointer;
+      border: none;
+    }
+    
+    .pagination {
+      display: flex;
+      justify-content: center;
+      margin-top: 20px;
+      gap: 5px;
+    }
+    .pagination button {
+      padding: 6px 12px;
+      border: 1px solid #ddd;
+      background: white;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .pagination button.active {
+      background: #6a4caf;
+      color: white;
+      border-color: #6a4caf;
+    }
+    
+    .tabs {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    .tab-btn {
+      padding: 8px 16px;
+      background: #f0e8f7;
+      border: none;
+      cursor: pointer;
+      border-radius: 8px 8px 0 0;
+      margin: 0 5px;
+    }
+    .tab-btn.active {
+      background: #6a4caf;
+      color: white;
     }
 
-    .product-info {
-      padding: 14px;
+    .more-images-badge {
+      position: absolute;
+      bottom: 5px;
+      right: 5px;
+      background: rgba(0,0,0,0.6);
+      color: white;
+      padding: 2px 6px;
+      border-radius: 10px;
+      font-size: 12px;
     }
-    .product-info h3 {
-      margin: 0 0 6px;
-      font-size: 18px;
-      color: #444;
+
+    /* Chatbot Styles */
+    .chatbot-container {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 350px;
+      z-index: 1000;
+      font-family: 'Poppins', sans-serif;
     }
-    .product-info p {
-      margin: 0;
-      font-size: 13px;
-      color: #666;
-      height: 40px;
+    .chatbot-toggle {
+      background: #6a4caf;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 60px;
+      height: 60px;
+      font-size: 24px;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-left: auto;
+    }
+    .chatbot-window {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
       overflow: hidden;
+      display: none;
+      height: 400px;
+      flex-direction: column;
     }
-    .product-price {
-      margin-top: 8px;
+    .chatbot-header {
+      background: #6a4caf;
+      color: white;
+      padding: 12px 16px;
       font-weight: bold;
-      color: #5d3ea4;
-    }
-
-    .product-actions {
       display: flex;
       justify-content: space-between;
-      padding: 10px 14px 14px;
+      align-items: center;
+    }
+    .chatbot-messages {
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+      background: #f9f9f9;
+    }
+    .message {
+      margin-bottom: 12px;
+      max-width: 80%;
+      padding: 8px 12px;
+      border-radius: 12px;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+    .bot-message {
+      background: white;
+      border: 1px solid #eee;
+      margin-right: auto;
+    }
+    .user-message {
+      background: #6a4caf;
+      color: white;
+      margin-left: auto;
+    }
+    .chatbot-input {
+      display: flex;
+      padding: 12px;
+      border-top: 1px solid #eee;
+      background: white;
+    }
+    .chatbot-input input {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 20px;
+      outline: none;
+    }
+    .chatbot-input button {
+      background: #6a4caf;
+      color: white;
+      border: none;
+      border-radius: 20px;
+      padding: 0 16px;
+      margin-left: 8px;
+      cursor: pointer;
     }
 
-    .edit-btn {
-      background: #fce1b6;
-      color: #744c1e;
-      padding: 6px 10px;
-      border-radius: 8px;
-      cursor: pointer;
-      border: none;
+    /* Rating Styles */
+    .rating-container {
+      margin-top: 8px;
+      font-size: 14px;
     }
-    .edit-btn:hover { background: #fbd49b; }
-
-    .delete-btn {
-      background: #f9caca;
-      color: #a12222;
-      padding: 6px 10px;
-      border-radius: 8px;
-      cursor: pointer;
-      border: none;
+    .rating-stars {
+      display: inline-block;
+      margin-right: 8px;
     }
-    .delete-btn:hover { background: #f7b0b0; }
+    .rating-stars span {
+      color: #ffc107;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    .rating-count {
+      color: #777;
+      font-size: 12px;
+    }
+    .user-rating {
+      margin-top: 5px;
+    }
+    .user-rating select {
+      padding: 4px;
+      border-radius: 4px;
+      border: 1px solid #ddd;
+      font-size: 12px;
+    }
+    .user-rating button {
+      padding: 4px 8px;
+      background: #6a4caf;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 12px;
+      margin-left: 5px;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
 
-  <header>
-    <h1>🌸 Rural Handmade Marketplace</h1>
-    <p>Empowering artisans with AI pricing & digital sales</p>
-  </header>
+<div id="toastContainer"></div>
 
-  <!-- ✅ FORM -->
-  <div class="form-section">
-    <h2>Upload Your Handmade Product</h2>
+<header>
+  <h1>🌸 Rural Handmade Marketplace</h1>
+  <p>Empowering artisans with AI pricing & digital sales</p>
+  <div style="margin-top:10px;">
+    <button onclick="showCart()">🛒 View Cart</button>
+    <button onclick="showWishlist()">💖 View Wishlist</button>
+  </div>
+</header>
 
-    <input type="text" id="name" placeholder="Product Name">
-    <textarea id="desc" placeholder="Short Description"></textarea>
+<div class="auth-section" id="authSection">
+  <h2>🔑 Login or Sign Up</h2>
+  <input type="email" id="email" placeholder="Email"><br>
+  <input type="password" id="password" placeholder="Password"><br>
+  <button class="login-btn" id="loginBtn">Login</button>
+  <button class="signup-btn" id="signupBtn">Sign Up</button>
+</div>
 
-    <!-- ✅ Image upload -->
-    <label>Upload Product Image:</label>
-    <input type="file" id="productImage" accept="image/*">
-    <div id="preview" style="margin:10px 0;text-align:center;"></div>
+<div style="text-align:center; display:none;" id="logoutSection">
+  <p>✅ Logged in as <span id="userEmail"></span></p>
+  <button class="logout-btn" id="logoutBtn">Logout</button>
+</div>
 
-    <input type="number" id="price" placeholder="AI Predicted Price" readonly>
+<div class="form-section" id="productForm" style="display:none;">
+  <h2>Upload Your Handmade Product</h2>
+  <input type="text" id="name" placeholder="Product Name">
+  <textarea id="desc" placeholder="Short Description"></textarea>
+  <select id="categorySelect">
+    <option value="clothing">Clothing</option>
+    <option value="art">Art</option>
+    <option value="decor">Home Decor</option>
+  </select>
+  <input type="file" id="productImage" accept="image/*" multiple><br>
+  <div class="image-preview-container" id="previewContainer"></div>
+  <div id="uploadStatus"></div>
+  <input type="number" id="price" placeholder="AI Predicted Price" readonly>
+  <div style="margin-top:10px;">
+    <button id="predictBtn">🔮 Predict Price</button>
+    <button id="saveBtn">💾 Save Product</button>
+  </div>
+</div>
 
-    <div style="text-align:center; margin-top:10px;">
-      <button id="predictBtn">🔮 Predict Price</button>
-      <button id="saveBtn">💾 Save Product</button>
+//part2
+<section class="product-section" style="display:none;" id="productSection">
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('all')">All Products</button>
+    <button class="tab-btn" onclick="switchTab('my')">My Products</button>
+  </div>
+  
+  <h2 style="text-align:center;">🛍️ Available Products</h2>
+  <div class="filters">
+    <select id="categoryFilter">
+      <option value="all">All Categories</option>
+      <option value="clothing">Clothing</option>
+      <option value="art">Art</option>
+      <option value="decor">Home Decor</option>
+    </select>
+    <select id="priceFilter">
+      <option value="all">All Prices</option>
+      <option value="low">Below ₹500</option>
+      <option value="mid">₹500 - ₹2000</option>
+      <option value="high">Above ₹2000</option>
+    </select>
+    <select id="sortFilter">
+      <option value="newest">Newest First</option>
+      <option value="oldest">Oldest First</option>
+      <option value="price_asc">Price: Low to High</option>
+      <option value="price_desc">Price: High to Low</option>
+    </select>
+    <input type="text" id="searchBar" placeholder="Search products...">
+  </div>
+  <div id="product-list" class="product-grid"></div>
+  <div class="pagination" id="pagination"></div>
+</section>
+
+<div class="cart-section" style="display:none;" id="cartSection">
+  <h2>🛒 Your Cart</h2>
+  <div id="cartItems"></div>
+  <p id="cartTotal" style="font-weight:bold;"></p>
+  <button onclick="checkout()">Proceed to Checkout</button>
+  <button onclick="hideCart()">Close</button>
+</div>
+
+<div class="wishlist-section" style="display:none;" id="wishlistSection">
+  <h2>💖 Your Wishlist</h2>
+  <div id="wishlistItems"></div>
+  <button onclick="hideWishlist()">Close</button>
+</div>
+
+<div class="checkout-section" style="display:none;" id="checkoutSection">
+  <h2>🏠 Delivery Details</h2>
+  <input type="text" id="address" placeholder="Full Address">
+  <input type="text" id="pincode" placeholder="Pincode">
+  <select id="paymentMethod">
+    <option value="cod">Cash on Delivery</option>
+    <option value="upi">UPI Payment</option>
+  </select>
+  <input type="text" id="upiId" placeholder="Enter UPI ID" style="display:none;">
+  <button onclick="confirmOrder()">✅ Confirm Order</button>
+  <button onclick="cancelCheckout()">Cancel</button>
+</div>
+
+<!-- Chatbot HTML -->
+<div class="chatbot-container">
+  <div class="chatbot-toggle" id="chatbotToggle">💬</div>
+  <div class="chatbot-window" id="chatbotWindow">
+    <div class="chatbot-header">
+      <span>Marketplace Assistant</span>
+      <button onclick="toggleChatbot()" style="background:none;border:none;color:white;cursor:pointer;">×</button>
+    </div>
+    <div class="chatbot-messages" id="chatbotMessages">
+      <div class="message bot-message">Hello! How can I help you today?</div>
+    </div>
+    <div class="chatbot-input">
+      <input type="text" id="chatbotInput" placeholder="Type your message...">
+      <button id="sendChatbotMessage">Send</button>
     </div>
   </div>
+</div>
 
-  <!-- ✅ PRODUCT LIST -->
-  <section class="product-section">
-    <h2 style="text-align:center;">🛍️ Available Products</h2>
-    <div id="product-list" class="product-grid"></div>
-  </section>
+//part3
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
+  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } 
+    from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
+  import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, setDoc, getDoc } 
+    from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
-    import { 
-      getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc 
-    } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
-    import { 
-      getStorage, ref, uploadBytes, getDownloadURL 
-    } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-storage.js";
+  const firebaseConfig = {
+    apiKey: "AIzaSyCttDmc8wi0GNU17pSE6k8jP-OtyCKubPs",
+    authDomain: "empowerment-6ec51.firebaseapp.com",
+    projectId: "empowerment-6ec51",
+    storageBucket: "empowerment-6ec51.appspot.com",
+    messagingSenderId: "42467695122",
+    appId: "1:42467695122:web:cc7b581561176e3af456cb",
+    measurementId: "G-L6Z945LDBV"
+  };
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyCttDmc8wi0GNU17pSE6k8jP-OtyCKubPs",
-      authDomain: "empowerment-6ec51.firebaseapp.com",
-      projectId: "empowerment-6ec51",
-      storageBucket: "empowerment-6ec51.appspot.com",
-      messagingSenderId: "42467695122",
-      appId: "1:42467695122:web:cc7b581561176e3af456cb",
-      measurementId: "G-L6Z945LDBV"
-    };
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const storage = getStorage(app);
+  const authSection = document.getElementById("authSection");
+  const logoutSection = document.getElementById("logoutSection");
+  const productForm = document.getElementById("productForm");
+  const productSection = document.getElementById("productSection");
+  const cartSectionDiv = document.getElementById("cartSection");
+  const wishlistSectionDiv = document.getElementById("wishlistSection");
+  const userEmailSpan = document.getElementById("userEmail");
 
-    const predictBtn = document.getElementById("predictBtn");
-    const saveBtn = document.getElementById("saveBtn");
-    const priceField = document.getElementById("price");
-    const imageInput = document.getElementById("productImage");
-    const previewDiv = document.getElementById("preview");
+  let currentUserEmail = null;
+  let allProducts = [];
+  let userCart = [];
+  let userWishlist = [];
+  let uploadedImages = [];
+  let currentTab = 'all';
+  let currentPage = 1;
+  const productsPerPage = 8;
+  const CLOUD_NAME = "dlw6x575s";
+  const UPLOAD_PRESET = "empower";
+  let editProductId = null;
 
-    let selectedImageFile = null;
-    let editProductId = null;
+  function showToast(message, type = 'success') {
+    const toastContainer = document.getElementById('toastContainer');
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.textContent = message;
+    toastContainer.appendChild(toast);
+    
+    void toast.offsetWidth;
+    toast.classList.add('show');
+    
+    setTimeout(() => {
+      toast.classList.remove('show');
+      setTimeout(() => toast.remove(), 300);
+    }, 3000);
+  }
 
-    // ✅ Preview image before upload
-    imageInput.addEventListener("change", () => {
-      if (imageInput.files.length > 0) {
-        selectedImageFile = imageInput.files[0];
+  document.getElementById("signupBtn").addEventListener("click", async () => {
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value.trim();
+    if (!email || !password) {
+      showToast("Please enter email & password!", "error");
+      return;
+    }
+    try {
+      await createUserWithEmailAndPassword(auth, email, password);
+      showToast("Signup successful! Logged in.");
+    } catch (err) {
+      showToast(err.message, "error");
+    }
+  });
+
+  document.getElementById("loginBtn").addEventListener("click", async () => {
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value.trim();
+    if (!email || !password) {
+      showToast("Please enter email & password!", "error");
+      return;
+    }
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      showToast("Login successful!");
+    } catch (err) {
+      showToast(err.message, "error");
+    }
+  });
+
+  document.getElementById("logoutBtn").addEventListener("click", async () => {
+    await signOut(auth);
+    showToast("Logged out successfully!");
+  });
+
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      currentUserEmail = user.email;
+      authSection.style.display = "none";
+      logoutSection.style.display = "block";
+      productForm.style.display = "block";
+      productSection.style.display = "block";
+      userEmailSpan.textContent = user.email;
+      await fetchProducts();
+      await loadUserCartWishlist();
+    } else {
+      currentUserEmail = null;
+      authSection.style.display = "block";
+      logoutSection.style.display = "none";
+      productForm.style.display = "none";
+      productSection.style.display = "none";
+      cartSectionDiv.style.display = "none";
+      wishlistSectionDiv.style.display = "none";
+    }
+  });
+
+  document.getElementById("productImage").addEventListener("change", async (e) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    
+    const previewContainer = document.getElementById("previewContainer");
+    previewContainer.innerHTML = "";
+    uploadedImages = [];
+    
+    const uploadStatus = document.getElementById("uploadStatus");
+    uploadStatus.innerHTML = `<span>Uploading ${files.length} images...</span> <span class="spinner"></span>`;
+    
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        
         const reader = new FileReader();
-        reader.onload = e => {
-          previewDiv.innerHTML = `<img src="${e.target.result}" style="width:120px; border-radius:8px;">`;
+        reader.onload = function(ev) {
+          const previewDiv = document.createElement("div");
+          previewDiv.className = "image-preview";
+          previewDiv.innerHTML = `
+            <img src="${ev.target.result}">
+            <button class="remove-image" onclick="removeImage(${i})">×</button>
+          `;
+          previewContainer.appendChild(previewDiv);
         };
-        reader.readAsDataURL(selectedImageFile);
-      }
-    });
-
-    // ✅ Predict Price using AI API
-    predictBtn.addEventListener("click", async () => {
-      let desc = document.getElementById("desc").value;
-      if (!desc.trim()) {
-        alert("Please enter a product description!");
-        return;
-      }
-      priceField.value = "Predicting...";
-      try {
-        const res = await fetch("https://ansheekav4444-price-prediction-api.hf.space/predict", {
+        reader.readAsDataURL(file);
+        
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("upload_preset", UPLOAD_PRESET);
+        
+        const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ description: desc })
+          body: formData
         });
         const data = await res.json();
-        priceField.value = data.predicted_price;
-      } catch (err) {
-        console.error(err);
-        alert("AI Prediction failed. Try again.");
-        priceField.value = "";
+        uploadedImages.push(data.secure_url);
       }
-    });
+      
+      uploadStatus.innerHTML = `<span style="color:green;">✅ Uploaded ${uploadedImages.length} images successfully!</span>`;
+    } catch (err) {
+      console.error("❌ Cloudinary Upload Error:", err);
+      uploadStatus.innerHTML = `<span style="color:red;">❌ Image upload failed!</span>`;
+    }
+  });
 
-    // ✅ Upload Image to Firebase Storage
-    async function uploadImageAndGetURL(file) {
-      const storageRef = ref(storage, "product_images/" + Date.now() + "_" + file.name);
-      await uploadBytes(storageRef, file);
-      return await getDownloadURL(storageRef);
+  window.removeImage = function(index) {
+    uploadedImages.splice(index, 1);
+    const previews = document.querySelectorAll('.image-preview');
+    if (previews[index]) {
+      previews[index].remove();
+    }
+  };
+
+  const saveBtn = document.getElementById("saveBtn");
+  const predictBtn = document.getElementById("predictBtn");
+  const priceField = document.getElementById("price");
+  const categorySelect = document.getElementById("categorySelect");
+
+  predictBtn.addEventListener("click", async () => {
+    let desc = document.getElementById("desc").value;
+    if (!desc.trim()) {
+      showToast("Please enter description!", "error");
+      return;
+    }
+    priceField.value = "Predicting...";
+    try {
+      const res = await fetch("https://ansheekav4444-price-prediction-api.hf.space/predict", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ description: desc })
+      });
+      const data = await res.json();
+      priceField.value = data.predicted_price;
+    } catch (err) {
+      console.error(err);
+      showToast("AI Prediction failed.", "error");
+      priceField.value = "";
+    }
+  });
+
+  saveBtn.addEventListener("click", async () => {
+    let name = document.getElementById("name").value.trim();
+    let desc = document.getElementById("desc").value.trim();
+    let price = priceField.value.trim();
+    let category = categorySelect.value;
+
+    if (!name || !desc || !price) {
+      showToast("Please fill all details!", "error");
+      return;
     }
 
-    // ✅ Save or Update Product
-    saveBtn.addEventListener("click", async () => {
-      let name = document.getElementById("name").value;
-      let desc = document.getElementById("desc").value;
-      let price = priceField.value;
+    let imageUrls = uploadedImages.length > 0 ? uploadedImages : ["https://via.placeholder.com/150"];
 
-      if (!name.trim() || !desc.trim() || !price.trim()) {
-        alert("Fill product name, description, and predict price first!");
-        return;
+    try {
+      if (editProductId) {
+        const productRef = doc(db, "products", editProductId);
+        await updateDoc(productRef, { 
+          name, 
+          description: desc, 
+          price, 
+          category, 
+          imageUrls,
+          updatedAt: new Date().toISOString()
+        });
+        showToast("Product updated successfully!");
+        editProductId = null;
+        saveBtn.textContent = "💾 Save Product";
+      } else {
+        await addDoc(collection(db, "products"), { 
+          name, 
+          description: desc, 
+          price, 
+          category, 
+          imageUrls, 
+          owner: currentUserEmail,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          ratings: [],
+          averageRating: 0
+        });
+        showToast("Product saved successfully!");
       }
+      
+      document.getElementById("name").value = "";
+      document.getElementById("desc").value = "";
+      priceField.value = "";
+      uploadedImages = [];
+      document.getElementById("previewContainer").innerHTML = "";
+      document.getElementById("productImage").value = "";
+      document.getElementById("uploadStatus").innerHTML = "";
+      fetchProducts();
+    } catch (e) {
+      console.error("Error:", e);
+      showToast("Error saving product", "error");
+    }
+  });
 
-      // let imageUrl = "";
-
-      // if (selectedImageFile) {
-      //   imageUrl = await uploadImageAndGetURL(selectedImageFile);
-      // }
-      let imageUrl = "https://via.placeholder.com/150"; // dummy image URL
-
-
-      try {
-        if (editProductId) {
-          const productRef = doc(db, "products", editProductId);
-          await updateDoc(productRef, { name, description: desc, price, imageUrl });
-          alert("✅ Product Updated!");
-          editProductId = null;
-          saveBtn.textContent = "💾 Save Product";
-        } else {
-          await addDoc(collection(db, "products"), { name, description: desc, price, imageUrl });
-          alert("✅ Product Saved!");
-        }
-
-        document.getElementById("name").value = "";
-        document.getElementById("desc").value = "";
-        priceField.value = "";
-        previewDiv.innerHTML = "";
-        selectedImageFile = null;
-
-        fetchProducts();
-      } catch (e) {
-        console.error("Error:", e);
-      }
+  async function fetchProducts() {
+    const listDiv = document.getElementById("product-list");
+    listDiv.innerHTML = "<div style='text-align:center;padding:20px;'><span class='spinner'></span> Loading products...</div>";
+    
+    const querySnapshot = await getDocs(collection(db, "products"));
+    allProducts = [];
+    querySnapshot.forEach((docSnap) => {
+      let data = docSnap.data();
+      allProducts.push({ id: docSnap.id, ...data });
     });
+    
+    applyFilters();
+  }
 
-    // ✅ Fetch products
-    async function fetchProducts() {
-      let listDiv = document.getElementById("product-list");
-      listDiv.innerHTML = "";
-
-      const querySnapshot = await getDocs(collection(db, "products"));
-      querySnapshot.forEach((docSnap) => {
-        let data = docSnap.data();
-        let productId = docSnap.id;
-
-        let imgTag = data.imageUrl 
-          ? `<img src="${data.imageUrl}" alt="${data.name}">` 
-          : `🧺`;
-
-        let productHTML = `
-          <div class="product-card">
-            <div class="product-img">${imgTag}</div>
-            <div class="product-info">
-              <h3>${data.name}</h3>
-              <p>${data.description}</p>
-              <div class="product-price">₹${data.price}</div>
+  function renderProducts(products) {
+    const listDiv = document.getElementById("product-list");
+    if (products.length === 0) {
+      listDiv.innerHTML = "<div style='text-align:center;padding:20px;'>No products found</div>";
+      return;
+    }
+    
+    listDiv.innerHTML = "";
+    products.forEach((p) => {
+      const isOwner = currentUserEmail && p.owner === currentUserEmail;
+      const mainImage = p.imageUrls?.[0] || p.imageUrl || "https://via.placeholder.com/150";
+      const averageRating = p.averageRating || 0;
+      const ratingCount = p.ratings?.length || 0;
+      
+      listDiv.innerHTML += `
+        <div class="product-card">
+          <div class="product-img">
+            <img src="${mainImage}" />
+            ${p.imageUrls?.length > 1 ? `<div class="more-images-badge">+${p.imageUrls.length - 1} more</div>` : ''}
+          </div>
+          <div class="product-info">
+            <h3>${p.name}</h3>
+            <p>${p.description}</p>
+            <div class="product-price">₹${p.price}</div>
+            <div style="font-size:12px;color:#777;">Category: ${p.category}</div>
+            <div class="rating-container">
+              <div class="rating-stars">
+                ${renderStars(averageRating)}
+              </div>
+              <span class="rating-count">(${ratingCount} ${ratingCount === 1 ? 'review' : 'reviews'})</span>
             </div>
-            <div class="product-actions">
-              <button class="edit-btn" onclick="editProduct('${productId}', '${data.name}', '${data.description}', '${data.price}')">✏️ Edit</button>
-              <button class="delete-btn" onclick="deleteProduct('${productId}')">🗑️ Delete</button>
+            ${!isOwner ? `
+            <div class="user-rating">
+              <select id="rating-${p.id}">
+                <option value="">Rate this product</option>
+                <option value="5">★★★★★</option>
+                <option value="4">★★★★☆</option>
+                <option value="3">★★★☆☆</option>
+                <option value="2">★★☆☆☆</option>
+                <option value="1">★☆☆☆☆</option>
+              </select>
+              <button onclick="submitRating('${p.id}')">Submit</button>
+            </div>` : ''}
+          </div>
+          <div class="product-actions">
+            ${isOwner ? `
+              <button class="edit-btn" onclick="editProduct('${p.id}')">✏️ Edit</button>
+              <button class="delete-btn" onclick="deleteProduct('${p.id}')">🗑️ Delete</button>` : `
+              <button class="cart-btn" onclick="addToCart('${p.id}')">🛒 Add to Cart</button>
+              <button class="wishlist-btn" onclick="addToWishlist('${p.id}')">💖 Wishlist</button>`}
+          </div>
+        </div>
+      `;
+    });
+  }
+  //part 4
+    function renderStars(rating) {
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 >= 0.5;
+    let stars = '';
+    
+    for (let i = 1; i <= 5; i++) {
+      if (i <= fullStars) {
+        stars += '★';
+      } else if (i === fullStars + 1 && hasHalfStar) {
+        stars += '½';
+      } else {
+        stars += '☆';
+      }
+    }
+    
+    return stars;
+  }
+
+  window.submitRating = async function(productId) {
+    if (!currentUserEmail) {
+      showToast("Please login to rate products", "error");
+      return;
+    }
+    
+    const ratingSelect = document.getElementById(`rating-${productId}`);
+    const ratingValue = parseInt(ratingSelect.value);
+    
+    if (!ratingValue || ratingValue < 1 || ratingValue > 5) {
+      showToast("Please select a valid rating", "error");
+      return;
+    }
+    
+    try {
+      const productRef = doc(db, "products", productId);
+      const productSnap = await getDoc(productRef);
+      
+      if (productSnap.exists()) {
+        const productData = productSnap.data();
+        let ratings = productData.ratings || [];
+        
+        // Check if user already rated this product
+        const existingRatingIndex = ratings.findIndex(r => r.user === currentUserEmail);
+        
+        if (existingRatingIndex >= 0) {
+          ratings[existingRatingIndex].value = ratingValue;
+        } else {
+          ratings.push({
+            user: currentUserEmail,
+            value: ratingValue,
+            timestamp: new Date().toISOString()
+          });
+        }
+        
+        // Calculate new average
+        const averageRating = ratings.reduce((sum, r) => sum + r.value, 0) / ratings.length;
+        
+        await updateDoc(productRef, {
+          ratings,
+          averageRating
+        });
+        
+        showToast("Rating submitted successfully!");
+        fetchProducts();
+      }
+    } catch (error) {
+      console.error("Error submitting rating:", error);
+      showToast("Error submitting rating", "error");
+    }
+  };
+
+  window.deleteProduct = async function(productId) {
+    if (confirm("Are you sure you want to delete this product?")) {
+      try {
+        await deleteDoc(doc(db, "products", productId));
+        showToast("Product deleted successfully!");
+        fetchProducts();
+      } catch (error) {
+        showToast("Error deleting product", "error");
+        console.error("Error deleting product:", error);
+      }
+    }
+  }
+
+  window.editProduct = async function(productId) {
+    const productRef = doc(db, "products", productId);
+    const productSnap = await getDoc(productRef);
+    if (productSnap.exists()) {
+      const productData = productSnap.data();
+      
+      document.getElementById("name").value = productData.name;
+      document.getElementById("desc").value = productData.description;
+      document.getElementById("price").value = productData.price;
+      categorySelect.value = productData.category;
+      
+      const previewContainer = document.getElementById("previewContainer");
+      previewContainer.innerHTML = "";
+      
+      if (productData.imageUrls) {
+        uploadedImages = [...productData.imageUrls];
+        productData.imageUrls.forEach((imgUrl, i) => {
+          previewContainer.innerHTML += `
+            <div class="image-preview">
+              <img src="${imgUrl}">
+              <button class="remove-image" onclick="removeImage(${i})">×</button>
             </div>
+          `;
+        });
+      } else if (productData.imageUrl) {
+        uploadedImages = [productData.imageUrl];
+        previewContainer.innerHTML += `
+          <div class="image-preview">
+            <img src="${productData.imageUrl}">
+            <button class="remove-image" onclick="removeImage(0)">×</button>
           </div>
         `;
-        listDiv.innerHTML += productHTML;
-      });
-    }
-
-    // ✅ Delete Product
-    window.deleteProduct = async function(productId) {
-      if (confirm("Are you sure you want to delete this product?")) {
-        await deleteDoc(doc(db, "products", productId));
-        alert("❌ Product Deleted!");
-        fetchProducts();
       }
-    }
-
-    // ✅ Edit Product
-    window.editProduct = function(productId, name, desc, price) {
-      document.getElementById("name").value = name;
-      document.getElementById("desc").value = desc;
-      document.getElementById("price").value = price;
+      
       editProductId = productId;
       saveBtn.textContent = "✅ Update Product";
-      alert("✏️ Edit mode enabled. Modify fields & click Update Product");
+      showToast("Product loaded for editing");
+      
+      // Scroll to form
+      document.getElementById("productForm").scrollIntoView({ behavior: 'smooth' });
     }
+  }
 
-    fetchProducts();
-  </script>
+  window.addToCart = async function(productId) {
+    if (!currentUserEmail) {
+      showToast("Please login to add to cart", "error");
+      return;
+    }
+    
+    const product = allProducts.find(p => p.id === productId);
+    if (!product) return;
+    
+    const existingItem = userCart.find(item => item.id === productId);
+    
+    try {
+      const cartRef = doc(db, "userCarts", currentUserEmail);
+      
+      if (existingItem) {
+        // Update quantity
+        const updatedCart = userCart.map(item => 
+          item.id === productId ? {...item, quantity: item.quantity + 1} : item
+        );
+        await setDoc(cartRef, { items: updatedCart }, { merge: true });
+      } else {
+        // Add new item
+        const newItem = {
+          id: productId,
+          name: product.name,
+          price: product.price,
+          image: product.imageUrls?.[0] || product.imageUrl,
+          quantity: 1
+        };
+        const updatedCart = [...userCart, newItem];
+        await setDoc(cartRef, { items: updatedCart }, { merge: true });
+      }
+      
+      showToast("Added to cart!");
+      loadUserCartWishlist();
+    } catch (error) {
+      console.error("Error adding to cart:", error);
+      showToast("Error adding to cart", "error");
+    }
+  };
+
+  window.addToWishlist = async function(productId) {
+    if (!currentUserEmail) {
+      showToast("Please login to add to wishlist", "error");
+      return;
+    }
+    
+    const product = allProducts.find(p => p.id === productId);
+    if (!product) return;
+    
+    const existingItem = userWishlist.find(item => item.id === productId);
+    if (existingItem) {
+      showToast("Already in wishlist", "warning");
+      return;
+    }
+    
+    try {
+      const wishlistRef = doc(db, "userWishlists", currentUserEmail);
+      const newItem = {
+        id: productId,
+        name: product.name,
+        price: product.price,
+        image: product.imageUrls?.[0] || product.imageUrl
+      };
+      const updatedWishlist = [...userWishlist, newItem];
+      await setDoc(wishlistRef, { items: updatedWishlist }, { merge: true });
+      
+      showToast("Added to wishlist!");
+      loadUserCartWishlist();
+    } catch (error) {
+      console.error("Error adding to wishlist:", error);
+      showToast("Error adding to wishlist", "error");
+    }
+  };
+
+  async function loadUserCartWishlist() {
+    if (!currentUserEmail) return;
+    
+    try {
+      // Load cart
+      const cartRef = doc(db, "userCarts", currentUserEmail);
+      const cartSnap = await getDoc(cartRef);
+      userCart = cartSnap.exists() ? cartSnap.data().items || [] : [];
+      
+      // Load wishlist
+      const wishlistRef = doc(db, "userWishlists", currentUserEmail);
+      const wishlistSnap = await getDoc(wishlistRef);
+      userWishlist = wishlistSnap.exists() ? wishlistSnap.data().items || [] : [];
+      
+      updateCartWishlistCounts();
+    } catch (error) {
+      console.error("Error loading cart/wishlist:", error);
+    }
+  }
+
+  function updateCartWishlistCounts() {
+    const cartCount = userCart.reduce((sum, item) => sum + item.quantity, 0);
+    const wishlistCount = userWishlist.length;
+    
+    document.querySelector('button[onclick="showCart()"]').textContent = 
+      `🛒 View Cart (${cartCount})`;
+    document.querySelector('button[onclick="showWishlist()"]').textContent = 
+      `💖 View Wishlist (${wishlistCount})`;
+  }
+
+  window.showCart = function() {
+    cartSectionDiv.style.display = "block";
+    wishlistSectionDiv.style.display = "none";
+    checkoutSection.style.display = "none";
+    renderCart();
+  };
+
+  window.hideCart = function() {
+    cartSectionDiv.style.display = "none";
+  };
+
+  window.showWishlist = function() {
+    wishlistSectionDiv.style.display = "block";
+    cartSectionDiv.style.display = "none";
+    checkoutSection.style.display = "none";
+    renderWishlist();
+  };
+
+  window.hideWishlist = function() {
+    wishlistSectionDiv.style.display = "none";
+  };
+
+  function renderCart() {
+    const cartItemsDiv = document.getElementById("cartItems");
+    const cartTotalDiv = document.getElementById("cartTotal");
+    
+    if (userCart.length === 0) {
+      cartItemsDiv.innerHTML = "<p>Your cart is empty</p>";
+      cartTotalDiv.textContent = "";
+      return;
+    }
+    
+    cartItemsDiv.innerHTML = "";
+    let total = 0;
+    
+    userCart.forEach(item => {
+      const itemTotal = item.price * item.quantity;
+      total += itemTotal;
+      
+      cartItemsDiv.innerHTML += `
+        <div class="list-item">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <img src="${item.image}" width="50" height="50" style="object-fit:cover;border-radius:6px;">
+            <div>
+              <div style="font-weight:bold;">${item.name}</div>
+              <div>₹${item.price} × ${item.quantity}</div>
+              <div class="subtotal">Subtotal: ₹${itemTotal}</div>
+            </div>
+          </div>
+          <div class="quantity-controls">
+            <button class="quantity-btn" onclick="updateCartItem('${item.id}', ${item.quantity - 1})">-</button>
+            <span>${item.quantity}</span>
+            <button class="quantity-btn" onclick="updateCartItem('${item.id}', ${item.quantity + 1})">+</button>
+            <button class="delete-btn" onclick="updateCartItem('${item.id}', 0)" style="margin-left:10px;">Remove</button>
+          </div>
+        </div>
+      `;
+    });
+    
+    cartTotalDiv.textContent = `Total: ₹${total}`;
+  }
+
+  window.updateCartItem = async function(productId, newQuantity) {
+    try {
+      const cartRef = doc(db, "userCarts", currentUserEmail);
+      let updatedCart;
+      
+      if (newQuantity <= 0) {
+        // Remove item
+        updatedCart = userCart.filter(item => item.id !== productId);
+      } else {
+        // Update quantity
+        updatedCart = userCart.map(item => 
+          item.id === productId ? {...item, quantity: newQuantity} : item
+        );
+      }
+      
+      await setDoc(cartRef, { items: updatedCart }, { merge: true });
+      userCart = updatedCart;
+      renderCart();
+      updateCartWishlistCounts();
+    } catch (error) {
+      console.error("Error updating cart:", error);
+      showToast("Error updating cart", "error");
+    }
+  };
+
+  function renderWishlist() {
+    const wishlistItemsDiv = document.getElementById("wishlistItems");
+    
+    if (userWishlist.length === 0) {
+      wishlistItemsDiv.innerHTML = "<p>Your wishlist is empty</p>";
+      return;
+    }
+    
+    wishlistItemsDiv.innerHTML = "";
+    
+    userWishlist.forEach(item => {
+      wishlistItemsDiv.innerHTML += `
+        <div class="list-item">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <img src="${item.image}" width="50" height="50" style="object-fit:cover;border-radius:6px;">
+            <div>
+              <div style="font-weight:bold;">${item.name}</div>
+              <div>₹${item.price}</div>
+            </div>
+          </div>
+          <div>
+            <button class="cart-btn" onclick="addToCart('${item.id}')">Add to Cart</button>
+            <button class="delete-btn" onclick="removeFromWishlist('${item.id}')">Remove</button>
+          </div>
+        </div>
+      `;
+    });
+  }
+
+  window.removeFromWishlist = async function(productId) {
+    try {
+      const wishlistRef = doc(db, "userWishlists", currentUserEmail);
+      const updatedWishlist = userWishlist.filter(item => item.id !== productId);
+      
+      await setDoc(wishlistRef, { items: updatedWishlist }, { merge: true });
+      userWishlist = updatedWishlist;
+      renderWishlist();
+      updateCartWishlistCounts();
+      showToast("Removed from wishlist");
+    } catch (error) {
+      console.error("Error removing from wishlist:", error);
+      showToast("Error removing from wishlist", "error");
+    }
+  };
+
+  window.checkout = function() {
+    if (userCart.length === 0) {
+      showToast("Your cart is empty", "error");
+      return;
+    }
+    
+    checkoutSection.style.display = "block";
+    cartSectionDiv.style.display = "none";
+    
+    // Show/hide UPI field based on payment method
+    document.getElementById("paymentMethod").addEventListener("change", function() {
+      document.getElementById("upiId").style.display = 
+        this.value === "upi" ? "block" : "none";
+    });
+  };
+
+  window.cancelCheckout = function() {
+    checkoutSection.style.display = "none";
+    cartSectionDiv.style.display = "block";
+  };
+
+  window.confirmOrder = async function() {
+    const address = document.getElementById("address").value.trim();
+    const pincode = document.getElementById("pincode").value.trim();
+    const paymentMethod = document.getElementById("paymentMethod").value;
+    const upiId = document.getElementById("upiId").value.trim();
+    
+    if (!address || !pincode) {
+      showToast("Please enter address and pincode", "error");
+      return;
+    }
+    
+    if (paymentMethod === "upi" && !upiId) {
+      showToast("Please enter UPI ID", "error");
+      return;
+    }
+    
+    try {
+      // Create order
+      const orderData = {
+        userEmail: currentUserEmail,
+        items: userCart,
+        address,
+        pincode,
+        paymentMethod,
+        upiId: paymentMethod === "upi" ? upiId : null,
+        status: "pending",
+        createdAt: new Date().toISOString()
+      };
+      
+      // Calculate total
+      orderData.total = userCart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      
+      await addDoc(collection(db, "orders"), orderData);
+      
+      // Clear cart
+      const cartRef = doc(db, "userCarts", currentUserEmail);
+      await setDoc(cartRef, { items: [] }, { merge: true });
+      userCart = [];
+      
+      showToast("Order placed successfully!");
+      updateCartWishlistCounts();
+      checkoutSection.style.display = "none";
+      document.getElementById("address").value = "";
+      document.getElementById("pincode").value = "";
+      document.getElementById("upiId").value = "";
+    } catch (error) {
+      console.error("Error placing order:", error);
+      showToast("Error placing order", "error");
+    }
+  };
+
+  window.switchTab = function(tab) {
+    currentTab = tab;
+    currentPage = 1;
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.textContent.includes(tab === 'all' ? 'All' : 'My'));
+    });
+    applyFilters();
+  };
+
+  function applyFilters() {
+    const categoryFilter = document.getElementById("categoryFilter").value;
+    const priceFilter = document.getElementById("priceFilter").value;
+    const sortFilter = document.getElementById("sortFilter").value;
+    const searchQuery = document.getElementById("searchBar").value.toLowerCase();
+    
+    let filteredProducts = [...allProducts];
+    
+    // Apply tab filter
+    if (currentTab === 'my') {
+      filteredProducts = filteredProducts.filter(p => p.owner === currentUserEmail);
+    }
+    
+    // Apply category filter
+    if (categoryFilter !== 'all') {
+      filteredProducts = filteredProducts.filter(p => p.category === categoryFilter);
+    }
+    
+    // Apply price filter
+    if (priceFilter === 'low') {
+      filteredProducts = filteredProducts.filter(p => p.price < 500);
+    } else if (priceFilter === 'mid') {
+      filteredProducts = filteredProducts.filter(p => p.price >= 500 && p.price <= 2000);
+    } else if (priceFilter === 'high') {
+      filteredProducts = filteredProducts.filter(p => p.price > 2000);
+    }
+    
+    // Apply search filter
+    if (searchQuery) {
+      filteredProducts = filteredProducts.filter(p => 
+        p.name.toLowerCase().includes(searchQuery) || 
+        p.description.toLowerCase().includes(searchQuery)
+      );
+    }
+    
+    // Apply sorting
+    if (sortFilter === 'newest') {
+      filteredProducts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    } else if (sortFilter === 'oldest') {
+      filteredProducts.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+    } else if (sortFilter === 'price_asc') {
+      filteredProducts.sort((a, b) => a.price - b.price);
+    } else if (sortFilter === 'price_desc') {
+      filteredProducts.sort((a, b) => b.price - a.price);
+    }
+    
+    renderPagination(filteredProducts);
+  }
+
+  function renderPagination(filteredProducts) {
+    const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
+    const paginationDiv = document.getElementById("pagination");
+    paginationDiv.innerHTML = "";
+    
+    if (totalPages <= 1) {
+      renderProducts(filteredProducts);
+      return;
+    }
+    
+    for (let i = 1; i <= totalPages; i++) {
+      const btn = document.createElement("button");
+      btn.textContent = i;
+      btn.classList.toggle("active", i === currentPage);
+      btn.addEventListener("click", () => {
+        currentPage = i;
+        applyFilters();
+      });
+      paginationDiv.appendChild(btn);
+    }
+    
+    const startIdx = (currentPage - 1) * productsPerPage;
+    const endIdx = startIdx + productsPerPage;
+    const paginatedProducts = filteredProducts.slice(startIdx, endIdx);
+    
+    renderProducts(paginatedProducts);
+  }
+
+  // Initialize filters event listeners
+  document.getElementById("categoryFilter").addEventListener("change", applyFilters);
+  document.getElementById("priceFilter").addEventListener("change", applyFilters);
+  document.getElementById("sortFilter").addEventListener("change", applyFilters);
+  document.getElementById("searchBar").addEventListener("input", applyFilters);
+
+  // Chatbot functionality
+  const chatbotToggle = document.getElementById("chatbotToggle");
+  const chatbotWindow = document.getElementById("chatbotWindow");
+  const chatbotMessages = document.getElementById("chatbotMessages");
+  const chatbotInput = document.getElementById("chatbotInput");
+  const sendChatbotMessage = document.getElementById("sendChatbotMessage");
+
+  window.toggleChatbot = function() {
+    chatbotWindow.style.display = chatbotWindow.style.display === "flex" ? "none" : "flex";
+  };
+
+  chatbotToggle.addEventListener("click", toggleChatbot);
+
+  function addBotMessage(text) {
+    const messageDiv = document.createElement("div");
+    messageDiv.className = "message bot-message";
+    messageDiv.textContent = text;
+    chatbotMessages.appendChild(messageDiv);
+    chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+  }
+
+  function addUserMessage(text) {
+    const messageDiv = document.createElement("div");
+    messageDiv.className = "message user-message";
+    messageDiv.textContent = text;
+    chatbotMessages.appendChild(messageDiv);
+    chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+  }
+
+  sendChatbotMessage.addEventListener("click", handleChatbotMessage);
+  chatbotInput.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") handleChatbotMessage();
+  });
+
+  function handleChatbotMessage() {
+    const message = chatbotInput.value.trim();
+    if (!message) return;
+    
+    addUserMessage(message);
+    chatbotInput.value = "";
+    
+    // Simple chatbot responses
+    setTimeout(() => {
+      const lowerMsg = message.toLowerCase();
+      
+      if (lowerMsg.includes("hello") || lowerMsg.includes("hi")) {
+        addBotMessage("Hello! How can I help you today?");
+      } else if (lowerMsg.includes("price") || lowerMsg.includes("cost")) {
+        addBotMessage("Our AI pricing tool suggests fair prices based on materials, time investment, and market trends. Try uploading a product to see the suggested price!");
+      } else if (lowerMsg.includes("sell") || lowerMsg.includes("upload")) {
+        addBotMessage("To sell your handmade products, simply fill out the product form above. Don't forget to add photos and a good description!");
+      } else if (lowerMsg.includes("shipping") || lowerMsg.includes("delivery")) {
+        addBotMessage("We offer shipping across India. Delivery times vary by location (typically 3-7 days). Shipping costs are calculated at checkout.");
+      } else if (lowerMsg.includes("payment") || lowerMsg.includes("pay")) {
+        addBotMessage("We accept Cash on Delivery (COD) and UPI payments for your convenience.");
+      } else {
+        addBotMessage("I'm a simple bot. For more complex questions, please contact our support team at support@ruralhandmade.com");
+      }
+    }, 500);
+  }
+
+  // Initialize the page
+  document.addEventListener("DOMContentLoaded", function() {
+    // Show welcome message after a delay
+    setTimeout(() => {
+      if (!currentUserEmail) {
+        showToast("Welcome to Rural Handmade Marketplace! Login to get started.");
+      }
+    }, 1500);
+  });
+</script>
 </body>
 </html>
