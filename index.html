@@ -81,6 +81,7 @@
     .login-btn { background: #cce5ff; color: #004085; }
     .signup-btn { background: #d4edda; color: #155724; }
     .logout-btn { background: #f8d7da; color: #721c24; }
+    .google-btn { background: #4285F4; color: white; }
     #predictBtn { background: #d9d4f7; color: #4b3f72; }
     #saveBtn { background: #c6f7d0; color: #255d36; }
 
@@ -507,6 +508,27 @@
       width: 0%;
       transition: width 0.5s ease;
     }
+
+    /* Divider */
+    .divider {
+      display: flex;
+      align-items: center;
+      text-align: center;
+      margin: 15px 0;
+      color: #666;
+    }
+    .divider::before,
+    .divider::after {
+      content: "";
+      flex: 1;
+      border-bottom: 1px solid #ddd;
+    }
+    .divider::before {
+      margin-right: 10px;
+    }
+    .divider::after {
+      margin-left: 10px;
+    }
   </style>
 </head>
 <body>
@@ -559,6 +581,14 @@
     <input type="password" id="password" placeholder="Password"><br>
     <button class="login-btn" id="loginBtn">Login</button>
     <button class="signup-btn" id="signupBtn">Sign Up</button>
+    
+    <div class="divider">OR</div>
+    
+    <button class="google-btn" id="googleSignInBtn">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" 
+           style="width:20px;height:20px;vertical-align:middle;margin-right:8px;">
+      Continue with Google
+    </button>
   </div>
 
   <div style="text-align:center; display:none;" id="logoutSection">
@@ -722,11 +752,19 @@
     </div>
   </div>
 
-
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
-  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } 
-    from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
+  import { 
+    getAuth, 
+    createUserWithEmailAndPassword, 
+    signInWithEmailAndPassword, 
+    signOut, 
+    onAuthStateChanged,
+    GoogleAuthProvider,
+    signInWithPopup,
+    sendEmailVerification,
+    sendPasswordResetEmail
+  } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
   import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, setDoc, getDoc } 
     from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
 
@@ -743,6 +781,7 @@
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db = getFirestore(app);
+  const googleProvider = new GoogleAuthProvider();
 
   // DOM Elements
   const authSection = document.getElementById("authSection");
@@ -750,6 +789,7 @@
   const productForm = document.getElementById("productForm");
   const productSection = document.getElementById("productSection");
   const userEmailSpan = document.getElementById("userEmail");
+  const googleSignInBtn = document.getElementById("googleSignInBtn");
 
   // Modal elements
   const cartModal = document.getElementById("cartModal");
@@ -787,6 +827,7 @@
     document.getElementById("signupBtn").addEventListener("click", handleSignup);
     document.getElementById("loginBtn").addEventListener("click", handleLogin);
     document.getElementById("logoutBtn").addEventListener("click", handleLogout);
+    googleSignInBtn.addEventListener("click", handleGoogleSignIn);
 
     // Product form
     document.getElementById("productImage").addEventListener("change", handleImageUpload);
@@ -814,8 +855,10 @@
     }
     
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
-      showToast("Account created successfully! Welcome to our artisan community.");
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      // Send email verification
+      await sendEmailVerification(userCredential.user);
+      showToast("Account created successfully! Verification email sent.");
     } catch (err) {
       showToast(err.message, "error");
     }
@@ -831,10 +874,32 @@
     }
     
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      
+      // Check if email is verified
+      if (!user.emailVerified) {
+        showToast("Please verify your email address before signing in.", "warning");
+        await sendEmailVerification(user);
+        return;
+      }
+      
       showToast("Welcome back to our artisan community!");
     } catch (err) {
       showToast(err.message, "error");
+    }
+  }
+
+  async function handleGoogleSignIn() {
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+      
+      // Google accounts are automatically verified, so no need to check
+      showToast(`Welcome ${user.displayName || ''} to our artisan community!`);
+    } catch (error) {
+      console.error("Google sign-in error:", error);
+      showToast(error.message, "error");
     }
   }
 
@@ -862,6 +927,22 @@
       cartModal.style.display = "none";
       wishlistModal.style.display = "none";
       checkoutModal.style.display = "none";
+    }
+  }
+
+  // Password reset function
+  async function handlePasswordReset() {
+    const email = document.getElementById("email").value.trim();
+    if (!email) {
+      showToast("Please enter your email address first.", "warning");
+      return;
+    }
+    
+    try {
+      await sendPasswordResetEmail(auth, email);
+      showToast("Password reset email sent. Please check your inbox.");
+    } catch (error) {
+      showToast(error.message, "error");
     }
   }
 
