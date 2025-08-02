@@ -44,14 +44,29 @@
       backdrop-filter: blur(3px);
     }
 
-    .auth-section input, .form-section input, .form-section textarea, select {
-      width: 90%;
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+      color: #555;
+    }
+
+    .auth-section input, 
+    .form-section input, 
+    .form-section textarea, 
+    .form-section select {
+      width: 100%;
       padding: 12px;
       margin: 8px 0;
       border: 1px solid #ddd;
       border-radius: 10px;
       font-size: 14px;
       background: rgba(255,255,255,0.8);
+      box-sizing: border-box;
     }
 
     .auth-section button, .form-section button {
@@ -97,8 +112,16 @@
     .product-info p { margin: 0; font-size: 13px; color: #666; height: 40px; overflow: hidden; }
     .product-price { margin-top: 8px; font-weight: bold; color: #5d3ea4; }
     .product-actions {
-      display: flex; flex-wrap: wrap;
-      justify-content: space-between; padding: 10px 14px 14px;
+      display: flex; 
+      flex-wrap: wrap;
+      justify-content: space-between; 
+      padding: 10px 14px 14px;
+      gap: 8px;
+    }
+    .product-actions button {
+      flex: 1;
+      min-width: 100px;
+      text-align: center;
     }
     .edit-btn { background: #fce1b6; color: #744c1e; padding: 6px 10px; border-radius: 8px; cursor: pointer; border: none; }
     .delete-btn { background: #f9caca; color: #a12222; padding: 6px 10px; border-radius: 8px; cursor: pointer; border: none; }
@@ -148,6 +171,8 @@
     }
     .form-row > div {
       flex: 1;
+      display: flex;
+      flex-direction: column;
     }
     .form-row label {
       display: block;
@@ -589,9 +614,21 @@
       </div>
     </div>
     
+    <div class="form-row">
+      <div class="form-group">
+        <label for="size">Size</label>
+        <select id="size">
+          <option value="small">Small</option>
+          <option value="medium" selected>Medium</option>
+          <option value="large">Large</option>
+          <option value="xlarge">Extra Large</option>
+        </select>
+      </div>
+    </div>
+    
     <div class="form-group">
-      <label for="productImage">Product Images</label>
-      <input type="file" id="productImage" accept="image/*" multiple>
+      <label for="productImage">Product Images (Required)</label>
+      <input type="file" id="productImage" accept="image/*" multiple required>
     </div>
     
     <div class="image-preview-container" id="previewContainer"></div>
@@ -610,7 +647,7 @@
     
     <div style="display: flex; gap: 10px; margin-top: 20px;">
       <button id="predictBtn" style="flex: 1;">🔮 Predict Price</button>
-      <button id="saveBtn" style="flex: 1;">💾 Save Product</button>
+      <button id="saveBtn" style="flex: 1;" disabled>💾 Save Product (Upload Images First)</button>
     </div>
   </div>
 
@@ -831,7 +868,11 @@
   // Product functions
   async function handleImageUpload(e) {
     const files = e.target.files;
-    if (!files || files.length === 0) return;
+    if (!files || files.length === 0) {
+      document.getElementById("saveBtn").disabled = true;
+      document.getElementById("saveBtn").textContent = "💾 Save Product (Upload Images First)";
+      return;
+    }
     
     const previewContainer = document.getElementById("previewContainer");
     previewContainer.innerHTML = "";
@@ -839,6 +880,10 @@
     
     const uploadStatus = document.getElementById("uploadStatus");
     uploadStatus.innerHTML = `<span>Uploading ${files.length} images...</span> <span class="spinner"></span>`;
+    
+    const saveBtn = document.getElementById("saveBtn");
+    saveBtn.disabled = true;
+    saveBtn.textContent = "💾 Uploading Images...";
     
     try {
       for (let i = 0; i < files.length; i++) {
@@ -866,14 +911,23 @@
           method: "POST",
           body: formData
         });
+        
+        if (!res.ok) {
+          throw new Error("Image upload failed");
+        }
+        
         const data = await res.json();
         uploadedImages.push(data.secure_url);
       }
       
       uploadStatus.innerHTML = `<span style="color:green;">✅ Uploaded ${uploadedImages.length} images successfully!</span>`;
+      saveBtn.disabled = false;
+      saveBtn.textContent = "💾 Save Product";
     } catch (err) {
       console.error("Image upload error:", err);
-      uploadStatus.innerHTML = `<span style="color:red;">❌ Image upload failed!</span>`;
+      uploadStatus.innerHTML = `<span style="color:red;">❌ Image upload failed! Please try again.</span>`;
+      saveBtn.disabled = true;
+      saveBtn.textContent = "💾 Save Product (Upload Failed)";
     }
   }
 
@@ -883,6 +937,13 @@
     if (previews[index]) {
       previews[index].remove();
     }
+    
+    // Update save button state
+    const saveBtn = document.getElementById("saveBtn");
+    saveBtn.disabled = uploadedImages.length === 0;
+    saveBtn.textContent = uploadedImages.length === 0 
+      ? "💾 Save Product (Upload Images First)" 
+      : "💾 Save Product";
   };
 
   async function predictPrice() {
@@ -1076,9 +1137,17 @@
       return;
     }
 
-    let imageUrls = uploadedImages.length > 0 ? uploadedImages : ["https://via.placeholder.com/150"];
+    // Check if images have been uploaded
+    if (uploadedImages.length === 0) {
+      showToast("Please upload at least one product image!", "error");
+      return;
+    }
 
     try {
+      const saveBtn = document.getElementById("saveBtn");
+      saveBtn.disabled = true;
+      saveBtn.innerHTML = `<span class="spinner"></span> Saving...`;
+      
       if (editProductId) {
         const productRef = doc(db, "products", editProductId);
         await updateDoc(productRef, { 
@@ -1090,12 +1159,11 @@
           timeSpent: parseFloat(timeSpent),
           complexity,
           size,
-          imageUrls,
+          imageUrls: uploadedImages,
           updatedAt: new Date().toISOString()
         });
         showToast("Product updated successfully!");
         editProductId = null;
-        document.getElementById("saveBtn").textContent = "💾 Save Product";
       } else {
         await addDoc(collection(db, "products"), { 
           name, 
@@ -1106,7 +1174,7 @@
           timeSpent: parseFloat(timeSpent),
           complexity,
           size,
-          imageUrls, 
+          imageUrls: uploadedImages, 
           owner: currentUserEmail,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
@@ -1117,23 +1185,34 @@
       }
       
       // Reset form
-      document.getElementById("name").value = "";
-      document.getElementById("desc").value = "";
-      document.getElementById("price").value = "";
-      document.getElementById("materials").value = "";
-      document.getElementById("timeSpent").value = "";
-      uploadedImages = [];
-      document.getElementById("previewContainer").innerHTML = "";
-      document.getElementById("productImage").value = "";
-      document.getElementById("uploadStatus").innerHTML = "";
-      document.getElementById("priceBreakdown").style.display = "none";
-      
-      // Refresh product list
+      resetProductForm();
       fetchProducts();
     } catch (e) {
       console.error("Error saving product:", e);
       showToast("Error saving product", "error");
+    } finally {
+      const saveBtn = document.getElementById("saveBtn");
+      saveBtn.disabled = false;
+      saveBtn.textContent = "💾 Save Product";
     }
+  }
+
+  function resetProductForm() {
+    document.getElementById("name").value = "";
+    document.getElementById("desc").value = "";
+    document.getElementById("price").value = "";
+    document.getElementById("materials").value = "";
+    document.getElementById("timeSpent").value = "";
+    document.getElementById("size").value = "medium";
+    document.getElementById("complexity").value = "medium";
+    document.getElementById("categorySelect").value = "clothing";
+    uploadedImages = [];
+    document.getElementById("previewContainer").innerHTML = "";
+    document.getElementById("productImage").value = "";
+    document.getElementById("uploadStatus").innerHTML = "";
+    document.getElementById("priceBreakdown").style.display = "none";
+    document.getElementById("saveBtn").disabled = true;
+    document.getElementById("saveBtn").textContent = "💾 Save Product (Upload Images First)";
   }
 
   // Product listing functions
@@ -1141,14 +1220,20 @@
     const listDiv = document.getElementById("product-list");
     listDiv.innerHTML = "<div style='text-align:center;padding:20px;'><span class='spinner'></span> Loading products...</div>";
     
-    const querySnapshot = await getDocs(collection(db, "products"));
-    allProducts = [];
-    querySnapshot.forEach((docSnap) => {
-      let data = docSnap.data();
-      allProducts.push({ id: docSnap.id, ...data });
-    });
-    
-    applyFilters();
+    try {
+      const querySnapshot = await getDocs(collection(db, "products"));
+      allProducts = [];
+      querySnapshot.forEach((docSnap) => {
+        let data = docSnap.data();
+        allProducts.push({ id: docSnap.id, ...data });
+      });
+      
+      applyFilters();
+    } catch (error) {
+      console.error("Error loading products:", error);
+      showToast("Error loading products", "error");
+      listDiv.innerHTML = "<div style='text-align:center;padding:20px;color:red;'>Error loading products</div>";
+    }
   }
 
   function renderProducts(products) {
@@ -1332,6 +1417,7 @@
       
       editProductId = productId;
       document.getElementById("saveBtn").textContent = "✅ Update Product";
+      document.getElementById("saveBtn").disabled = false;
       showToast("Product loaded for editing");
       
       // Scroll to form
