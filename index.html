@@ -308,6 +308,29 @@
     .quick-reply-btn:hover {
       background: #d9d4f7;
     }
+    .chatbot-input-area {
+      display: flex;
+      padding: 10px;
+      border-top: 1px solid #ddd;
+      background: white;
+    }
+    #chatbotInput {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 20px;
+      outline: none;
+    }
+    #sendChatbotMessage {
+      background: #6a4caf;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      margin-left: 10px;
+      cursor: pointer;
+    }
 
     /* Toast Styles */
     .toast {
@@ -529,6 +552,24 @@
     .divider::after {
       margin-left: 10px;
     }
+    
+    /* Filter Styles */
+    .filters {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .filters select, .filters input {
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      background: white;
+    }
+    .filters input {
+      flex: 1;
+      min-width: 200px;
+    }
   </style>
 </head>
 <body>
@@ -560,6 +601,10 @@
             <button class="quick-reply-btn" onclick="sendQuickReply('Shipping info')">🚚 Shipping</button>
           </div>
         </div>
+      </div>
+      <div class="chatbot-input-area">
+        <input type="text" id="chatbotInput" placeholder="Type your question...">
+        <button id="sendChatbotMessage" onclick="sendChatbotMessage()">➤</button>
       </div>
     </div>
   </div>
@@ -690,25 +735,27 @@
     
     <h2 style="text-align:center;">🛍️ Handmade Products</h2>
     <div class="filters">
-      <select id="categoryFilter">
+      <select id="categoryFilter" onchange="applyFilters()">
         <option value="all">All Categories</option>
         <option value="clothing">Clothing</option>
         <option value="art">Art</option>
         <option value="decor">Home Decor</option>
+        <option value="jewelry">Jewelry</option>
+        <option value="toys">Toys</option>
       </select>
-      <select id="priceFilter">
+      <select id="priceFilter" onchange="applyFilters()">
         <option value="all">All Prices</option>
         <option value="low">Below ₹500</option>
         <option value="mid">₹500 - ₹2000</option>
         <option value="high">Above ₹2000</option>
       </select>
-      <select id="sortFilter">
+      <select id="sortFilter" onchange="applyFilters()">
         <option value="newest">Newest First</option>
         <option value="oldest">Oldest First</option>
         <option value="price_asc">Price: Low to High</option>
         <option value="price_desc">Price: High to Low</option>
       </select>
-      <input type="text" id="searchBar" placeholder="Search products...">
+      <input type="text" id="searchBar" placeholder="Search products..." oninput="applyFilters()">
     </div>
     <div id="product-list" class="product-grid"></div>
     <div class="pagination" id="pagination"></div>
@@ -753,1252 +800,1226 @@
   </div>
 
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
-  import { 
-    getAuth, 
-    createUserWithEmailAndPassword, 
-    signInWithEmailAndPassword, 
-    signOut, 
-    onAuthStateChanged,
-    GoogleAuthProvider,
-    signInWithPopup,
-    sendEmailVerification,
-    sendPasswordResetEmail
-  } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
-  import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, setDoc, getDoc } 
-    from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
+import { 
+  getAuth, 
+  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword, 
+  signOut, 
+  onAuthStateChanged,
+  GoogleAuthProvider,
+  signInWithPopup,
+  EmailAuthProvider,
+  linkWithCredential,
+  sendEmailVerification,
+  sendPasswordResetEmail
+} from "https://www.gstatic.com/firebasejs/9.17.1/firebase-auth.js";
+import { 
+  getFirestore, 
+  collection, 
+  addDoc, 
+  getDocs, 
+  deleteDoc, 
+  doc, 
+  updateDoc, 
+  setDoc, 
+  getDoc 
+} from "https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore.js";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyCttDmc8wi0GNU17pSE6k8jP-OtyCKubPs",
-    authDomain: "empowerment-6ec51.firebaseapp.com",
-    projectId: "empowerment-6ec51",
-    storageBucket: "empowerment-6ec51.appspot.com",
-    messagingSenderId: "42467695122",
-    appId: "1:42467695122:web:cc7b581561176e3af456cb",
-    measurementId: "G-L6Z945LDBV"
-  };
+const firebaseConfig = {
+  apiKey: "AIzaSyCttDmc8wi0GNU17pSE6k8jP-OtyCKubPs",
+  authDomain: "empowerment-6ec51.firebaseapp.com",
+  projectId: "empowerment-6ec51",
+  storageBucket: "empowerment-6ec51.appspot.com",
+  messagingSenderId: "42467695122",
+  appId: "1:42467695122:web:cc7b581561176e3af456cb",
+  measurementId: "G-L6Z945LDBV"
+};
 
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getFirestore(app);
-  const googleProvider = new GoogleAuthProvider();
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const googleProvider = new GoogleAuthProvider();
 
-  // DOM Elements
-  const authSection = document.getElementById("authSection");
-  const logoutSection = document.getElementById("logoutSection");
-  const productForm = document.getElementById("productForm");
-  const productSection = document.getElementById("productSection");
-  const userEmailSpan = document.getElementById("userEmail");
-  const googleSignInBtn = document.getElementById("googleSignInBtn");
+// Global variables for account linking
+let accountToLink = null;
 
-  // Modal elements
-  const cartModal = document.getElementById("cartModal");
-  const wishlistModal = document.getElementById("wishlistModal");
-  const checkoutModal = document.getElementById("checkoutModal");
+// DOM Elements
+const authSection = document.getElementById("authSection");
+const logoutSection = document.getElementById("logoutSection");
+const productForm = document.getElementById("productForm");
+const productSection = document.getElementById("productSection");
+const userEmailSpan = document.getElementById("userEmail");
+const googleSignInBtn = document.getElementById("googleSignInBtn");
 
-  // Global variables
-  let currentUserEmail = null;
-  let allProducts = [];
-  let userCart = [];
-  let userWishlist = [];
-  let uploadedImages = [];
-  let currentTab = 'all';
-  let currentPage = 1;
-  const productsPerPage = 8;
-  const CLOUD_NAME = "dlw6x575s";
-  const UPLOAD_PRESET = "empower";
-  let editProductId = null;
+// Global variables
+let currentUserEmail = null;
+let allProducts = [];
+let userCart = [];
+let userWishlist = [];
+let uploadedImages = [];
+let currentTab = 'all';
+let currentPage = 1;
+const productsPerPage = 8;
+const CLOUD_NAME = "dlw6x575s";
+const UPLOAD_PRESET = "empower";
+let editProductId = null;
 
-  // Initialize the application
-  document.addEventListener("DOMContentLoaded", function() {
-    // Show welcome message after a delay
-    setTimeout(() => {
-      if (!currentUserEmail) {
-        showToast("Welcome to Rural Artisan Marketplace! Login to get started.");
-      }
-    }, 1500);
+// Initialize the application
+document.addEventListener("DOMContentLoaded", function() {
+  setTimeout(() => {
+    if (!currentUserEmail) {
+      showToast("Welcome to Rural Artisan Marketplace! Login to get started.");
+    }
+  }, 1500);
 
-    // Initialize event listeners
-    initEventListeners();
+  initEventListeners();
+});
+
+function initEventListeners() {
+  // Auth buttons
+  document.getElementById("signupBtn").addEventListener("click", handleSignupAndPrepareLink);
+  document.getElementById("loginBtn").addEventListener("click", handleEmailLogin);
+  document.getElementById("logoutBtn").addEventListener("click", handleLogout);
+  googleSignInBtn.addEventListener("click", handleGoogleSignInWithLink);
+
+  // Product form
+  document.getElementById("productImage").addEventListener("change", handleImageUpload);
+  document.getElementById("predictBtn").addEventListener("click", predictPrice);
+  document.getElementById("saveBtn").addEventListener("click", saveProduct);
+
+  // Payment method toggle
+  document.getElementById("paymentMethod").addEventListener("change", function() {
+    document.getElementById("upiId").style.display = 
+      this.value === "upi" ? "block" : "none";
   });
 
-  function initEventListeners() {
-    // Auth buttons
-    document.getElementById("signupBtn").addEventListener("click", handleSignup);
-    document.getElementById("loginBtn").addEventListener("click", handleLogin);
-    document.getElementById("logoutBtn").addEventListener("click", handleLogout);
-    googleSignInBtn.addEventListener("click", handleGoogleSignIn);
+  // Chatbot setup
+  setupChatbot();
+  document.getElementById("chatbotInput").addEventListener("keypress", function(e) {
+    if (e.key === "Enter") {
+      sendChatbotMessage();
+    }
+  });
+  document.getElementById("sendChatbotMessage").addEventListener("click", sendChatbotMessage);
 
-    // Product form
-    document.getElementById("productImage").addEventListener("change", handleImageUpload);
-    document.getElementById("predictBtn").addEventListener("click", predictPrice);
-    document.getElementById("saveBtn").addEventListener("click", saveProduct);
+  // Auth state observer
+  onAuthStateChanged(auth, handleAuthStateChange);
+}
 
-    // Payment method toggle
-    document.getElementById("paymentMethod").addEventListener("change", function() {
-      document.getElementById("upiId").style.display = 
-        this.value === "upi" ? "block" : "none";
-    });
+/* Enhanced Authentication Functions with Account Linking */
+async function handleGoogleSignInWithLink() {
+  try {
+    const result = await signInWithPopup(auth, googleProvider);
+    const user = result.user;
+    console.log("Signed in with Google:", user);
 
-    // Auth state observer
-    onAuthStateChanged(auth, handleAuthStateChange);
+    if (accountToLink) {
+      const credential = EmailAuthProvider.credential(accountToLink.email, accountToLink.password);
+      await linkWithCredential(user, credential);
+      console.log("Linked Email/Password with Google account");
+      showToast("✅ Your email/password login has been linked with Google!");
+      accountToLink = null;
+    } else {
+      showToast(`Welcome ${user.displayName || ''} to our artisan community!`);
+    }
+  } catch (error) {
+    console.error("Google Sign-in or linking error:", error);
+    showToast(error.message, "error");
+  }
+}
+
+async function handleSignupAndPrepareLink() {
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value.trim();
+
+  if (!email || !password) {
+    showToast("Please enter email & password!", "error");
+    return;
   }
 
-  // Authentication functions
-  async function handleSignup() {
-    const email = document.getElementById("email").value.trim();
-    const password = document.getElementById("password").value.trim();
-    
-    if (!email || !password) {
-      showToast("Please enter email & password!", "error");
-      return;
-    }
-    
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      // Send email verification
-      await sendEmailVerification(userCredential.user);
-      showToast("Account created successfully! Verification email sent.");
-    } catch (err) {
-      showToast(err.message, "error");
+  try {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    await sendEmailVerification(userCredential.user);
+    showToast("Account created successfully! Verification email sent.");
+  } catch (error) {
+    if (error.code === 'auth/email-already-in-use') {
+      accountToLink = { email, password };
+      showToast("Email already in use. You can continue with Google to link both accounts.", "warning");
+    } else {
+      showToast(error.message, "error");
     }
   }
+}
 
-  async function handleLogin() {
-    const email = document.getElementById("email").value.trim();
-    const password = document.getElementById("password").value.trim();
-    
-    if (!email || !password) {
-      showToast("Please enter email & password!", "error");
+async function handleEmailLogin() {
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value.trim();
+
+  if (!email || !password) {
+    showToast("Please enter email & password!", "error");
+    return;
+  }
+
+  try {
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
+
+    if (!user.emailVerified) {
+      await sendEmailVerification(user);
+      showToast("Please verify your email address before logging in.", "warning");
       return;
     }
-    
-    try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
+
+    showToast("Welcome back to our artisan community!");
+  } catch (error) {
+    showToast(error.message, "error");
+  }
+}
+
+async function handleLogout() {
+  await signOut(auth);
+  showToast("You've been logged out. Come back soon!");
+}
+
+function handleAuthStateChange(user) {
+  if (user) {
+    currentUserEmail = user.email;
+    authSection.style.display = "none";
+    logoutSection.style.display = "block";
+    productForm.style.display = "block";
+    productSection.style.display = "block";
+    userEmailSpan.textContent = user.email;
+    fetchProducts();
+    loadUserCartWishlist();
+  } else {
+    currentUserEmail = null;
+    authSection.style.display = "block";
+    logoutSection.style.display = "none";
+    productForm.style.display = "none";
+    productSection.style.display = "none";
+    document.getElementById("cartModal").style.display = "none";
+    document.getElementById("wishlistModal").style.display = "none";
+    document.getElementById("checkoutModal").style.display = "none";
+  }
+}
+
+/* Product Management Functions */
+async function handleImageUpload(e) {
+  const files = e.target.files;
+  if (!files || files.length === 0) {
+    document.getElementById("saveBtn").disabled = true;
+    document.getElementById("saveBtn").textContent = "💾 Save Product (Upload Images First)";
+    return;
+  }
+  
+  const previewContainer = document.getElementById("previewContainer");
+  previewContainer.innerHTML = "";
+  uploadedImages = [];
+  
+  const uploadStatus = document.getElementById("uploadStatus");
+  uploadStatus.innerHTML = `<span>Uploading ${files.length} images...</span> <span class="spinner"></span>`;
+  
+  const saveBtn = document.getElementById("saveBtn");
+  saveBtn.disabled = true;
+  saveBtn.textContent = "💾 Uploading Images...";
+  
+  try {
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
       
-      // Check if email is verified
-      if (!user.emailVerified) {
-        showToast("Please verify your email address before signing in.", "warning");
-        await sendEmailVerification(user);
-        return;
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = function(ev) {
+        const previewDiv = document.createElement("div");
+        previewDiv.className = "image-preview";
+        previewDiv.innerHTML = `
+          <img src="${ev.target.result}">
+          <button class="remove-image" onclick="removeImage(${i})">×</button>
+        `;
+        previewContainer.appendChild(previewDiv);
+      };
+      reader.readAsDataURL(file);
+      
+      // Upload to Cloudinary
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("upload_preset", UPLOAD_PRESET);
+      
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
+        method: "POST",
+        body: formData
+      });
+      
+      if (!res.ok) {
+        throw new Error("Image upload failed");
       }
       
-      showToast("Welcome back to our artisan community!");
-    } catch (err) {
-      showToast(err.message, "error");
-    }
-  }
-
-  async function handleGoogleSignIn() {
-    try {
-      const result = await signInWithPopup(auth, googleProvider);
-      const user = result.user;
-      
-      // Google accounts are automatically verified, so no need to check
-      showToast(`Welcome ${user.displayName || ''} to our artisan community!`);
-    } catch (error) {
-      console.error("Google sign-in error:", error);
-      showToast(error.message, "error");
-    }
-  }
-
-  async function handleLogout() {
-    await signOut(auth);
-    showToast("You've been logged out. Come back soon!");
-  }
-
-  function handleAuthStateChange(user) {
-    if (user) {
-      currentUserEmail = user.email;
-      authSection.style.display = "none";
-      logoutSection.style.display = "block";
-      productForm.style.display = "block";
-      productSection.style.display = "block";
-      userEmailSpan.textContent = user.email;
-      fetchProducts();
-      loadUserCartWishlist();
-    } else {
-      currentUserEmail = null;
-      authSection.style.display = "block";
-      logoutSection.style.display = "none";
-      productForm.style.display = "none";
-      productSection.style.display = "none";
-      cartModal.style.display = "none";
-      wishlistModal.style.display = "none";
-      checkoutModal.style.display = "none";
-    }
-  }
-
-  // Password reset function
-  async function handlePasswordReset() {
-    const email = document.getElementById("email").value.trim();
-    if (!email) {
-      showToast("Please enter your email address first.", "warning");
-      return;
+      const data = await res.json();
+      uploadedImages.push(data.secure_url);
     }
     
+    uploadStatus.innerHTML = `<span style="color:green;">✅ Uploaded ${uploadedImages.length} images successfully!</span>`;
+    saveBtn.disabled = false;
+    saveBtn.textContent = "💾 Save Product";
+  } catch (err) {
+    console.error("Image upload error:", err);
+    uploadStatus.innerHTML = `<span style="color:red;">❌ Image upload failed! Please try again.</span>`;
+    saveBtn.disabled = true;
+    saveBtn.textContent = "💾 Save Product (Upload Failed)";
+  }
+}
+
+window.removeImage = function(index) {
+  uploadedImages.splice(index, 1);
+  const previews = document.querySelectorAll('.image-preview');
+  if (previews[index]) {
+    previews[index].remove();
+  }
+  
+  const saveBtn = document.getElementById("saveBtn");
+  saveBtn.disabled = uploadedImages.length === 0;
+  saveBtn.textContent = uploadedImages.length === 0 
+    ? "💾 Save Product (Upload Images First)" 
+    : "💾 Save Product";
+};
+
+async function predictPrice() {
+  const desc = document.getElementById("desc").value.trim();
+  const category = document.getElementById("categorySelect").value;
+  const materials = document.getElementById("materials").value.trim();
+  const timeSpent = parseFloat(document.getElementById("timeSpent").value) || 1;
+  const complexity = document.getElementById("complexity").value;
+  const size = document.getElementById("size").value;
+  
+  if (!desc) {
+    showToast("Please enter description!", "error");
+    return;
+  }
+  
+  document.getElementById("price").value = "Predicting...";
+  document.getElementById("priceBreakdown").style.display = "none";
+  document.getElementById("predictBtn").innerHTML = `<span class="spinner"></span> Predicting`;
+  
+  try {
+    const localPrediction = calculateLocalPricePrediction(category, materials, timeSpent, complexity, size);
+    let aiPrediction = null;
+    
     try {
-      await sendPasswordResetEmail(auth, email);
-      showToast("Password reset email sent. Please check your inbox.");
-    } catch (error) {
-      showToast(error.message, "error");
+      const res = await fetch("https://ansheekav4444-price-prediction-api.hf.space/predict", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          description: desc,
+          category,
+          materials,
+          time_spent: timeSpent,
+          complexity,
+          size
+        })
+      });
+      const data = await res.json();
+      aiPrediction = data.predicted_price;
+    } catch (err) {
+      console.log("AI API failed, using local prediction", err);
     }
+    
+    const finalPrice = aiPrediction !== null ? 
+      Math.round((aiPrediction * 0.7 + localPrediction * 0.3)) : 
+      localPrediction;
+    
+    document.getElementById("price").value = finalPrice;
+    
+    showPriceBreakdown({
+      category,
+      materials,
+      timeSpent,
+      complexity,
+      size,
+      localPrediction,
+      aiPrediction: aiPrediction,
+      finalPrice
+    });
+    
+  } catch (err) {
+    console.error("Price prediction error:", err);
+    showToast("Price prediction failed. Please enter a price manually.", "error");
+    document.getElementById("price").removeAttribute("readonly");
+  } finally {
+    document.getElementById("predictBtn").textContent = "🔮 Predict Price";
+  }
+}
+
+function calculateLocalPricePrediction(category, materials, timeSpent, complexity, size) {
+  const categoryBasePrices = {
+    clothing: 500,
+    art: 800,
+    decor: 600,
+    jewelry: 700,
+    toys: 400
+  };
+  
+  const materialMultipliers = {
+    cotton: 1.0,
+    silk: 1.8,
+    wool: 1.5,
+    wood: 1.2,
+    metal: 1.7,
+    ceramic: 1.4,
+    glass: 1.6,
+    leather: 2.0,
+    plastic: 0.8
+  };
+  
+  const complexityMultipliers = {
+    low: 0.8,
+    medium: 1.0,
+    high: 1.5
+  };
+  
+  const sizeMultipliers = {
+    small: 0.7,
+    medium: 1.0,
+    large: 1.4,
+    xlarge: 2.0
+  };
+  
+  const hourlyRate = 150;
+  
+  let materialScore = 1;
+  if (materials) {
+    const materialList = materials.toLowerCase().split(/[,&]+/).map(m => m.trim());
+    materialScore = materialList.reduce((sum, mat) => {
+      return sum + (materialMultipliers[mat] || 1.0);
+    }, 0) / materialList.length;
+  }
+  
+  let basePrice = categoryBasePrices[category] || 500;
+  let price = basePrice * materialScore * complexityMultipliers[complexity] * sizeMultipliers[size];
+  
+  const effectiveTime = Math.max(1, timeSpent);
+  price += effectiveTime * hourlyRate * complexityMultipliers[complexity];
+  
+  price = Math.round(price / 50) * 50;
+  return price;
+}
+
+function showPriceBreakdown(details) {
+  const breakdownDiv = document.getElementById("breakdownDetails");
+  breakdownDiv.innerHTML = "";
+  
+  addBreakdownItem(breakdownDiv, "Category Base", `₹${details.localPrediction * 0.4}`);
+  addBreakdownItem(breakdownDiv, "Materials", `₹${details.localPrediction * 0.3}`);
+  addBreakdownItem(breakdownDiv, "Time & Skill", `₹${details.localPrediction * 0.3}`);
+  
+  if (details.aiPrediction) {
+    breakdownDiv.innerHTML += `<div style="margin-top:10px;border-top:1px dashed #ddd;padding-top:10px;"></div>`;
+    addBreakdownItem(breakdownDiv, "AI Suggestion", `₹${details.aiPrediction}`);
+  }
+  
+  breakdownDiv.innerHTML += `<div style="margin-top:10px;border-top:1px solid #ddd;padding-top:10px;font-weight:bold;"></div>`;
+  addBreakdownItem(breakdownDiv, "Recommended Price", `₹${details.finalPrice}`);
+  
+  const confidence = details.aiPrediction ? 85 : 70;
+  breakdownDiv.innerHTML += `
+    <div style="margin-top:15px;">
+      <div>Confidence: ${confidence}%</div>
+      <div class="confidence-meter">
+        <div class="confidence-level" style="width:${confidence}%"></div>
+      </div>
+    </div>
+  `;
+  
+  document.getElementById("priceBreakdown").style.display = "block";
+}
+
+function addBreakdownItem(container, label, value) {
+  container.innerHTML += `
+    <div>
+      <span>${label}:</span>
+      <span>${value}</span>
+    </div>
+  `;
+}
+
+async function saveProduct() {
+  let name = document.getElementById("name").value.trim();
+  let desc = document.getElementById("desc").value.trim();
+  let price = document.getElementById("price").value.trim();
+  let category = document.getElementById("categorySelect").value;
+  let materials = document.getElementById("materials").value.trim();
+  let timeSpent = document.getElementById("timeSpent").value;
+  let complexity = document.getElementById("complexity").value;
+  let size = document.getElementById("size").value;
+
+  if (!name || !desc || !price) {
+    showToast("Please fill all required details!", "error");
+    return;
   }
 
-  // Product functions
-  async function handleImageUpload(e) {
-    const files = e.target.files;
-    if (!files || files.length === 0) {
-      document.getElementById("saveBtn").disabled = true;
-      document.getElementById("saveBtn").textContent = "💾 Save Product (Upload Images First)";
-      return;
+  if (uploadedImages.length === 0) {
+    showToast("Please upload at least one product image!", "error");
+    return;
+  }
+
+  try {
+    const saveBtn = document.getElementById("saveBtn");
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = `<span class="spinner"></span> Saving...`;
+    
+    if (editProductId) {
+      const productRef = doc(db, "products", editProductId);
+      await updateDoc(productRef, { 
+        name, 
+        description: desc, 
+        price: parseFloat(price),
+        category,
+        materials,
+        timeSpent: parseFloat(timeSpent),
+        complexity,
+        size,
+        imageUrls: uploadedImages,
+        updatedAt: new Date().toISOString()
+      });
+      showToast("Product updated successfully!");
+      editProductId = null;
+    } else {
+      await addDoc(collection(db, "products"), { 
+        name, 
+        description: desc, 
+        price: parseFloat(price),
+        category,
+        materials,
+        timeSpent: parseFloat(timeSpent),
+        complexity,
+        size,
+        imageUrls: uploadedImages, 
+        owner: currentUserEmail,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        ratings: [],
+        averageRating: 0
+      });
+      showToast("Product saved successfully!");
     }
+    
+    resetProductForm();
+    fetchProducts();
+  } catch (e) {
+    console.error("Error saving product:", e);
+    showToast("Error saving product", "error");
+  } finally {
+    const saveBtn = document.getElementById("saveBtn");
+    saveBtn.disabled = false;
+    saveBtn.textContent = "💾 Save Product";
+  }
+}
+
+function resetProductForm() {
+  document.getElementById("name").value = "";
+  document.getElementById("desc").value = "";
+  document.getElementById("price").value = "";
+  document.getElementById("materials").value = "";
+  document.getElementById("timeSpent").value = "";
+  document.getElementById("size").value = "medium";
+  document.getElementById("complexity").value = "medium";
+  document.getElementById("categorySelect").value = "clothing";
+  uploadedImages = [];
+  document.getElementById("previewContainer").innerHTML = "";
+  document.getElementById("productImage").value = "";
+  document.getElementById("uploadStatus").innerHTML = "";
+  document.getElementById("priceBreakdown").style.display = "none";
+  document.getElementById("saveBtn").disabled = true;
+  document.getElementById("saveBtn").textContent = "💾 Save Product (Upload Images First)";
+}
+
+async function fetchProducts() {
+  const listDiv = document.getElementById("product-list");
+  listDiv.innerHTML = "<div style='text-align:center;padding:20px;'><span class='spinner'></span> Loading products...</div>";
+  
+  try {
+    const querySnapshot = await getDocs(collection(db, "products"));
+    allProducts = [];
+    querySnapshot.forEach((docSnap) => {
+      let data = docSnap.data();
+      allProducts.push({ id: docSnap.id, ...data });
+    });
+    
+    applyFilters();
+  } catch (error) {
+    console.error("Error loading products:", error);
+    showToast("Error loading products", "error");
+    listDiv.innerHTML = "<div style='text-align:center;padding:20px;color:red;'>Error loading products</div>";
+  }
+}
+
+function renderProducts(products) {
+  const listDiv = document.getElementById("product-list");
+  if (products.length === 0) {
+    listDiv.innerHTML = "<div style='text-align:center;padding:20px;'>No products found</div>";
+    return;
+  }
+  
+  listDiv.innerHTML = "";
+  products.forEach((p) => {
+    const isOwner = currentUserEmail && p.owner === currentUserEmail;
+    const mainImage = p.imageUrls?.[0] || p.imageUrl || "https://via.placeholder.com/150";
+    const averageRating = p.averageRating || 0;
+    const ratingCount = p.ratings?.length || 0;
+    
+    listDiv.innerHTML += `
+      <div class="product-card">
+        <div class="product-img">
+          <img src="${mainImage}" />
+          ${p.imageUrls?.length > 1 ? `<div class="more-images-badge">+${p.imageUrls.length - 1} more</div>` : ''}
+        </div>
+        <div class="product-info">
+          <h3>${p.name}</h3>
+          <p>${p.description}</p>
+          <div class="product-price">₹${p.price}</div>
+          <div style="font-size:12px;color:#777;">Category: ${p.category}</div>
+          <div class="rating-container">
+            <div class="rating-stars">
+              ${renderStars(averageRating)}
+            </div>
+            <span class="rating-count">(${ratingCount} ${ratingCount === 1 ? 'review' : 'reviews'})</span>
+          </div>
+          ${!isOwner ? `
+          <div class="user-rating">
+            <select id="rating-${p.id}">
+              <option value="">Rate this product</option>
+              <option value="5">★★★★★</option>
+              <option value="4">★★★★☆</option>
+              <option value="3">★★★☆☆</option>
+              <option value="2">★★☆☆☆</option>
+              <option value="1">★☆☆☆☆</option>
+            </select>
+            <button onclick="submitRating('${p.id}')">Submit</button>
+          </div>` : ''}
+        </div>
+        <div class="product-actions">
+          ${isOwner ? `
+            <button class="edit-btn" onclick="editProduct('${p.id}')">✏️ Edit</button>
+            <button class="delete-btn" onclick="deleteProduct('${p.id}')">🗑️ Delete</button>` : `
+            <button class="cart-btn" onclick="addToCart('${p.id}')">🛒 Add to Cart</button>
+            <button class="wishlist-btn" onclick="addToWishlist('${p.id}')">💖 Wishlist</button>`}
+        </div>
+      </div>
+    `;
+  });
+}
+
+function renderStars(rating) {
+  const fullStars = Math.floor(rating);
+  const hasHalfStar = rating % 1 >= 0.5;
+  let stars = '';
+  
+  for (let i = 1; i <= 5; i++) {
+    if (i <= fullStars) {
+      stars += '★';
+    } else if (i === fullStars + 1 && hasHalfStar) {
+      stars += '½';
+    } else {
+      stars += '☆';
+    }
+  }
+  
+  return stars;
+}
+
+window.submitRating = async function(productId) {
+  if (!currentUserEmail) {
+    showToast("Please login to rate products", "error");
+    return;
+  }
+  
+  const ratingSelect = document.getElementById(`rating-${productId}`);
+  const ratingValue = parseInt(ratingSelect.value);
+  
+  if (!ratingValue || ratingValue < 1 || ratingValue > 5) {
+    showToast("Please select a valid rating", "error");
+    return;
+  }
+  
+  try {
+    const productRef = doc(db, "products", productId);
+    const productSnap = await getDoc(productRef);
+    
+    if (productSnap.exists()) {
+      const productData = productSnap.data();
+      let ratings = productData.ratings || [];
+      
+      const existingRatingIndex = ratings.findIndex(r => r.user === currentUserEmail);
+      
+      if (existingRatingIndex >= 0) {
+        ratings[existingRatingIndex].value = ratingValue;
+      } else {
+        ratings.push({
+          user: currentUserEmail,
+          value: ratingValue,
+          timestamp: new Date().toISOString()
+        });
+      }
+      
+      const averageRating = ratings.reduce((sum, r) => sum + r.value, 0) / ratings.length;
+      
+      await updateDoc(productRef, {
+        ratings,
+        averageRating
+      });
+      
+      showToast("Rating submitted successfully!");
+      fetchProducts();
+    }
+  } catch (error) {
+    console.error("Error submitting rating:", error);
+    showToast("Error submitting rating", "error");
+  }
+};
+
+window.deleteProduct = async function(productId) {
+  if (confirm("Are you sure you want to delete this product?")) {
+    try {
+      await deleteDoc(doc(db, "products", productId));
+      showToast("Product deleted successfully!");
+      fetchProducts();
+    } catch (error) {
+      showToast("Error deleting product", "error");
+      console.error("Error deleting product:", error);
+    }
+  }
+};
+
+window.editProduct = async function(productId) {
+  const productRef = doc(db, "products", productId);
+  const productSnap = await getDoc(productRef);
+  if (productSnap.exists()) {
+    const productData = productSnap.data();
+    
+    document.getElementById("name").value = productData.name;
+    document.getElementById("desc").value = productData.description;
+    document.getElementById("price").value = productData.price;
+    document.getElementById("categorySelect").value = productData.category;
+    document.getElementById("materials").value = productData.materials || "";
+    document.getElementById("timeSpent").value = productData.timeSpent || "";
+    document.getElementById("complexity").value = productData.complexity || "medium";
+    document.getElementById("size").value = productData.size || "medium";
     
     const previewContainer = document.getElementById("previewContainer");
     previewContainer.innerHTML = "";
-    uploadedImages = [];
     
-    const uploadStatus = document.getElementById("uploadStatus");
-    uploadStatus.innerHTML = `<span>Uploading ${files.length} images...</span> <span class="spinner"></span>`;
-    
-    const saveBtn = document.getElementById("saveBtn");
-    saveBtn.disabled = true;
-    saveBtn.textContent = "💾 Uploading Images...";
-    
-    try {
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        
-        // Create preview
-        const reader = new FileReader();
-        reader.onload = function(ev) {
-          const previewDiv = document.createElement("div");
-          previewDiv.className = "image-preview";
-          previewDiv.innerHTML = `
-            <img src="${ev.target.result}">
-            <button class="remove-image" onclick="removeImage(${i})">×</button>
-          `;
-          previewContainer.appendChild(previewDiv);
-        };
-        reader.readAsDataURL(file);
-        
-        // Upload to Cloudinary
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("upload_preset", UPLOAD_PRESET);
-        
-        const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
-          method: "POST",
-          body: formData
-        });
-        
-        if (!res.ok) {
-          throw new Error("Image upload failed");
-        }
-        
-        const data = await res.json();
-        uploadedImages.push(data.secure_url);
-      }
-      
-      uploadStatus.innerHTML = `<span style="color:green;">✅ Uploaded ${uploadedImages.length} images successfully!</span>`;
-      saveBtn.disabled = false;
-      saveBtn.textContent = "💾 Save Product";
-    } catch (err) {
-      console.error("Image upload error:", err);
-      uploadStatus.innerHTML = `<span style="color:red;">❌ Image upload failed! Please try again.</span>`;
-      saveBtn.disabled = true;
-      saveBtn.textContent = "💾 Save Product (Upload Failed)";
-    }
-  }
-
-  window.removeImage = function(index) {
-    uploadedImages.splice(index, 1);
-    const previews = document.querySelectorAll('.image-preview');
-    if (previews[index]) {
-      previews[index].remove();
-    }
-    
-    // Update save button state
-    const saveBtn = document.getElementById("saveBtn");
-    saveBtn.disabled = uploadedImages.length === 0;
-    saveBtn.textContent = uploadedImages.length === 0 
-      ? "💾 Save Product (Upload Images First)" 
-      : "💾 Save Product";
-  };
-
-  async function predictPrice() {
-    const desc = document.getElementById("desc").value.trim();
-    const category = document.getElementById("categorySelect").value;
-    const materials = document.getElementById("materials").value.trim();
-    const timeSpent = parseFloat(document.getElementById("timeSpent").value) || 1;
-    const complexity = document.getElementById("complexity").value;
-    const size = document.getElementById("size").value;
-    
-    if (!desc) {
-      showToast("Please enter description!", "error");
-      return;
-    }
-    
-    document.getElementById("price").value = "Predicting...";
-    document.getElementById("priceBreakdown").style.display = "none";
-    document.getElementById("predictBtn").innerHTML = `<span class="spinner"></span> Predicting`;
-    
-    try {
-      // First try our enhanced local prediction
-      const localPrediction = calculateLocalPricePrediction(category, materials, timeSpent, complexity, size);
-      
-      // Then try the AI API as fallback
-      let aiPrediction = null;
-      try {
-        const res = await fetch("https://ansheekav4444-price-prediction-api.hf.space/predict", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ 
-            description: desc,
-            category,
-            materials,
-            time_spent: timeSpent,
-            complexity,
-            size
-          })
-        });
-        const data = await res.json();
-        aiPrediction = data.predicted_price;
-      } catch (err) {
-        console.log("AI API failed, using local prediction", err);
-      }
-      
-      // Combine results with preference for AI prediction if available
-      const finalPrice = aiPrediction !== null ? 
-        Math.round((aiPrediction * 0.7 + localPrediction * 0.3)) : 
-        localPrediction;
-      
-      document.getElementById("price").value = finalPrice;
-      
-      // Show price breakdown
-      showPriceBreakdown({
-        category,
-        materials,
-        timeSpent,
-        complexity,
-        size,
-        localPrediction,
-        aiPrediction: aiPrediction,
-        finalPrice
-      });
-      
-    } catch (err) {
-      console.error("Price prediction error:", err);
-      showToast("Price prediction failed. Please enter a price manually.", "error");
-      document.getElementById("price").removeAttribute("readonly");
-    } finally {
-      document.getElementById("predictBtn").textContent = "🔮 Predict Price";
-    }
-  }
-
-  function calculateLocalPricePrediction(category, materials, timeSpent, complexity, size) {
-    // Base prices by category
-    const categoryBasePrices = {
-      clothing: 500,
-      art: 800,
-      decor: 600,
-      jewelry: 700,
-      toys: 400
-    };
-    
-    // Material multipliers
-    const materialMultipliers = {
-      cotton: 1.0,
-      silk: 1.8,
-      wool: 1.5,
-      wood: 1.2,
-      metal: 1.7,
-      ceramic: 1.4,
-      glass: 1.6,
-      leather: 2.0,
-      plastic: 0.8
-    };
-    
-    // Complexity multipliers
-    const complexityMultipliers = {
-      low: 0.8,
-      medium: 1.0,
-      high: 1.5
-    };
-    
-    // Size multipliers
-    const sizeMultipliers = {
-      small: 0.7,
-      medium: 1.0,
-      large: 1.4,
-      xlarge: 2.0
-    };
-    
-    // Hourly rate based on skill level
-    const hourlyRate = 150; // Base rate
-    
-    // Calculate material score
-    let materialScore = 1;
-    if (materials) {
-      const materialList = materials.toLowerCase().split(/[,&]+/).map(m => m.trim());
-      materialScore = materialList.reduce((sum, mat) => {
-        return sum + (materialMultipliers[mat] || 1.0);
-      }, 0) / materialList.length;
-    }
-    
-    // Calculate base price
-    let basePrice = categoryBasePrices[category] || 500;
-    
-    // Calculate final price
-    let price = basePrice * materialScore * complexityMultipliers[complexity] * sizeMultipliers[size];
-    
-    // Add time component (minimum 1 hour)
-    const effectiveTime = Math.max(1, timeSpent);
-    price += effectiveTime * hourlyRate * complexityMultipliers[complexity];
-    
-    // Round to nearest 50
-    price = Math.round(price / 50) * 50;
-    
-    return price;
-  }
-
-  function showPriceBreakdown(details) {
-    const breakdownDiv = document.getElementById("breakdownDetails");
-    breakdownDiv.innerHTML = "";
-    
-    // Add breakdown items
-    addBreakdownItem(breakdownDiv, "Category Base", `₹${details.localPrediction * 0.4}`);
-    addBreakdownItem(breakdownDiv, "Materials", `₹${details.localPrediction * 0.3}`);
-    addBreakdownItem(breakdownDiv, "Time & Skill", `₹${details.localPrediction * 0.3}`);
-    
-    if (details.aiPrediction) {
-      breakdownDiv.innerHTML += `<div style="margin-top:10px;border-top:1px dashed #ddd;padding-top:10px;"></div>`;
-      addBreakdownItem(breakdownDiv, "AI Suggestion", `₹${details.aiPrediction}`);
-    }
-    
-    breakdownDiv.innerHTML += `<div style="margin-top:10px;border-top:1px solid #ddd;padding-top:10px;font-weight:bold;"></div>`;
-    addBreakdownItem(breakdownDiv, "Recommended Price", `₹${details.finalPrice}`);
-    
-    // Add confidence meter
-    const confidence = details.aiPrediction ? 85 : 70;
-    breakdownDiv.innerHTML += `
-      <div style="margin-top:15px;">
-        <div>Confidence: ${confidence}%</div>
-        <div class="confidence-meter">
-          <div class="confidence-level" style="width:${confidence}%"></div>
-        </div>
-      </div>
-    `;
-    
-    document.getElementById("priceBreakdown").style.display = "block";
-  }
-
-  function addBreakdownItem(container, label, value) {
-    container.innerHTML += `
-      <div>
-        <span>${label}:</span>
-        <span>${value}</span>
-      </div>
-    `;
-  }
-
-  async function saveProduct() {
-    let name = document.getElementById("name").value.trim();
-    let desc = document.getElementById("desc").value.trim();
-    let price = document.getElementById("price").value.trim();
-    let category = document.getElementById("categorySelect").value;
-    let materials = document.getElementById("materials").value.trim();
-    let timeSpent = document.getElementById("timeSpent").value;
-    let complexity = document.getElementById("complexity").value;
-    let size = document.getElementById("size").value;
-
-    if (!name || !desc || !price) {
-      showToast("Please fill all required details!", "error");
-      return;
-    }
-
-    // Check if images have been uploaded
-    if (uploadedImages.length === 0) {
-      showToast("Please upload at least one product image!", "error");
-      return;
-    }
-
-    try {
-      const saveBtn = document.getElementById("saveBtn");
-      saveBtn.disabled = true;
-      saveBtn.innerHTML = `<span class="spinner"></span> Saving...`;
-      
-      if (editProductId) {
-        const productRef = doc(db, "products", editProductId);
-        await updateDoc(productRef, { 
-          name, 
-          description: desc, 
-          price: parseFloat(price),
-          category,
-          materials,
-          timeSpent: parseFloat(timeSpent),
-          complexity,
-          size,
-          imageUrls: uploadedImages,
-          updatedAt: new Date().toISOString()
-        });
-        showToast("Product updated successfully!");
-        editProductId = null;
-      } else {
-        await addDoc(collection(db, "products"), { 
-          name, 
-          description: desc, 
-          price: parseFloat(price),
-          category,
-          materials,
-          timeSpent: parseFloat(timeSpent),
-          complexity,
-          size,
-          imageUrls: uploadedImages, 
-          owner: currentUserEmail,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          ratings: [],
-          averageRating: 0
-        });
-        showToast("Product saved successfully!");
-      }
-      
-      // Reset form
-      resetProductForm();
-      fetchProducts();
-    } catch (e) {
-      console.error("Error saving product:", e);
-      showToast("Error saving product", "error");
-    } finally {
-      const saveBtn = document.getElementById("saveBtn");
-      saveBtn.disabled = false;
-      saveBtn.textContent = "💾 Save Product";
-    }
-  }
-
-  function resetProductForm() {
-    document.getElementById("name").value = "";
-    document.getElementById("desc").value = "";
-    document.getElementById("price").value = "";
-    document.getElementById("materials").value = "";
-    document.getElementById("timeSpent").value = "";
-    document.getElementById("size").value = "medium";
-    document.getElementById("complexity").value = "medium";
-    document.getElementById("categorySelect").value = "clothing";
-    uploadedImages = [];
-    document.getElementById("previewContainer").innerHTML = "";
-    document.getElementById("productImage").value = "";
-    document.getElementById("uploadStatus").innerHTML = "";
-    document.getElementById("priceBreakdown").style.display = "none";
-    document.getElementById("saveBtn").disabled = true;
-    document.getElementById("saveBtn").textContent = "💾 Save Product (Upload Images First)";
-  }
-
-  // Product listing functions
-  async function fetchProducts() {
-    const listDiv = document.getElementById("product-list");
-    listDiv.innerHTML = "<div style='text-align:center;padding:20px;'><span class='spinner'></span> Loading products...</div>";
-    
-    try {
-      const querySnapshot = await getDocs(collection(db, "products"));
-      allProducts = [];
-      querySnapshot.forEach((docSnap) => {
-        let data = docSnap.data();
-        allProducts.push({ id: docSnap.id, ...data });
-      });
-      
-      applyFilters();
-    } catch (error) {
-      console.error("Error loading products:", error);
-      showToast("Error loading products", "error");
-      listDiv.innerHTML = "<div style='text-align:center;padding:20px;color:red;'>Error loading products</div>";
-    }
-  }
-
-  function renderProducts(products) {
-    const listDiv = document.getElementById("product-list");
-    if (products.length === 0) {
-      listDiv.innerHTML = "<div style='text-align:center;padding:20px;'>No products found</div>";
-      return;
-    }
-    
-    listDiv.innerHTML = "";
-    products.forEach((p) => {
-      const isOwner = currentUserEmail && p.owner === currentUserEmail;
-      const mainImage = p.imageUrls?.[0] || p.imageUrl || "https://via.placeholder.com/150";
-      const averageRating = p.averageRating || 0;
-      const ratingCount = p.ratings?.length || 0;
-      
-      listDiv.innerHTML += `
-        <div class="product-card">
-          <div class="product-img">
-            <img src="${mainImage}" />
-            ${p.imageUrls?.length > 1 ? `<div class="more-images-badge">+${p.imageUrls.length - 1} more</div>` : ''}
-          </div>
-          <div class="product-info">
-            <h3>${p.name}</h3>
-            <p>${p.description}</p>
-            <div class="product-price">₹${p.price}</div>
-            <div style="font-size:12px;color:#777;">Category: ${p.category}</div>
-            <div class="rating-container">
-              <div class="rating-stars">
-                ${renderStars(averageRating)}
-              </div>
-              <span class="rating-count">(${ratingCount} ${ratingCount === 1 ? 'review' : 'reviews'})</span>
-            </div>
-            ${!isOwner ? `
-            <div class="user-rating">
-              <select id="rating-${p.id}">
-                <option value="">Rate this product</option>
-                <option value="5">★★★★★</option>
-                <option value="4">★★★★☆</option>
-                <option value="3">★★★☆☆</option>
-                <option value="2">★★☆☆☆</option>
-                <option value="1">★☆☆☆☆</option>
-              </select>
-              <button onclick="submitRating('${p.id}')">Submit</button>
-            </div>` : ''}
-          </div>
-          <div class="product-actions">
-            ${isOwner ? `
-              <button class="edit-btn" onclick="editProduct('${p.id}')">✏️ Edit</button>
-              <button class="delete-btn" onclick="deleteProduct('${p.id}')">🗑️ Delete</button>` : `
-              <button class="cart-btn" onclick="addToCart('${p.id}')">🛒 Add to Cart</button>
-              <button class="wishlist-btn" onclick="addToWishlist('${p.id}')">💖 Wishlist</button>`}
-          </div>
-        </div>
-      `;
-    });
-  }
-
-  function renderStars(rating) {
-    const fullStars = Math.floor(rating);
-    const hasHalfStar = rating % 1 >= 0.5;
-    let stars = '';
-    
-    for (let i = 1; i <= 5; i++) {
-      if (i <= fullStars) {
-        stars += '★';
-      } else if (i === fullStars + 1 && hasHalfStar) {
-        stars += '½';
-      } else {
-        stars += '☆';
-      }
-    }
-    
-    return stars;
-  }
-
-  window.submitRating = async function(productId) {
-    if (!currentUserEmail) {
-      showToast("Please login to rate products", "error");
-      return;
-    }
-    
-    const ratingSelect = document.getElementById(`rating-${productId}`);
-    const ratingValue = parseInt(ratingSelect.value);
-    
-    if (!ratingValue || ratingValue < 1 || ratingValue > 5) {
-      showToast("Please select a valid rating", "error");
-      return;
-    }
-    
-    try {
-      const productRef = doc(db, "products", productId);
-      const productSnap = await getDoc(productRef);
-      
-      if (productSnap.exists()) {
-        const productData = productSnap.data();
-        let ratings = productData.ratings || [];
-        
-        // Check if user already rated this product
-        const existingRatingIndex = ratings.findIndex(r => r.user === currentUserEmail);
-        
-        if (existingRatingIndex >= 0) {
-          ratings[existingRatingIndex].value = ratingValue;
-        } else {
-          ratings.push({
-            user: currentUserEmail,
-            value: ratingValue,
-            timestamp: new Date().toISOString()
-          });
-        }
-        
-        // Calculate new average
-        const averageRating = ratings.reduce((sum, r) => sum + r.value, 0) / ratings.length;
-        
-        await updateDoc(productRef, {
-          ratings,
-          averageRating
-        });
-        
-        showToast("Rating submitted successfully!");
-        fetchProducts();
-      }
-    } catch (error) {
-      console.error("Error submitting rating:", error);
-      showToast("Error submitting rating", "error");
-    }
-  };
-
-  window.deleteProduct = async function(productId) {
-    if (confirm("Are you sure you want to delete this product?")) {
-      try {
-        await deleteDoc(doc(db, "products", productId));
-        showToast("Product deleted successfully!");
-        fetchProducts();
-      } catch (error) {
-        showToast("Error deleting product", "error");
-        console.error("Error deleting product:", error);
-      }
-    }
-  }
-
-  window.editProduct = async function(productId) {
-    const productRef = doc(db, "products", productId);
-    const productSnap = await getDoc(productRef);
-    if (productSnap.exists()) {
-      const productData = productSnap.data();
-      
-      // Fill form with product data
-      document.getElementById("name").value = productData.name;
-      document.getElementById("desc").value = productData.description;
-      document.getElementById("price").value = productData.price;
-      document.getElementById("categorySelect").value = productData.category;
-      document.getElementById("materials").value = productData.materials || "";
-      document.getElementById("timeSpent").value = productData.timeSpent || "";
-      document.getElementById("complexity").value = productData.complexity || "medium";
-      document.getElementById("size").value = productData.size || "medium";
-      
-      // Handle images
-      const previewContainer = document.getElementById("previewContainer");
-      previewContainer.innerHTML = "";
-      
-      if (productData.imageUrls) {
-        uploadedImages = [...productData.imageUrls];
-        productData.imageUrls.forEach((imgUrl, i) => {
-          previewContainer.innerHTML += `
-            <div class="image-preview">
-              <img src="${imgUrl}">
-              <button class="remove-image" onclick="removeImage(${i})">×</button>
-            </div>
-          `;
-        });
-      } else if (productData.imageUrl) {
-        uploadedImages = [productData.imageUrl];
+    if (productData.imageUrls) {
+      uploadedImages = [...productData.imageUrls];
+      productData.imageUrls.forEach((imgUrl, i) => {
         previewContainer.innerHTML += `
           <div class="image-preview">
-            <img src="${productData.imageUrl}">
-            <button class="remove-image" onclick="removeImage(0)">×</button>
+            <img src="${imgUrl}">
+            <button class="remove-image" onclick="removeImage(${i})">×</button>
           </div>
         `;
-      }
-      
-      editProductId = productId;
-      document.getElementById("saveBtn").textContent = "✅ Update Product";
-      document.getElementById("saveBtn").disabled = false;
-      showToast("Product loaded for editing");
-      
-      // Scroll to form
-      document.getElementById("productForm").scrollIntoView({ behavior: 'smooth' });
+      });
+    } else if (productData.imageUrl) {
+      uploadedImages = [productData.imageUrl];
+      previewContainer.innerHTML += `
+        <div class="image-preview">
+          <img src="${productData.imageUrl}">
+          <button class="remove-image" onclick="removeImage(0)">×</button>
+        </div>
+      `;
     }
+    
+    editProductId = productId;
+    document.getElementById("saveBtn").textContent = "✅ Update Product";
+    document.getElementById("saveBtn").disabled = false;
+    showToast("Product loaded for editing");
+    
+    document.getElementById("productForm").scrollIntoView({ behavior: 'smooth' });
   }
+};
 
-  // Cart and Wishlist functions
-  window.addToCart = async function(productId) {
-    if (!currentUserEmail) {
-      showToast("Please login to add to cart", "error");
-      return;
-    }
+window.addToCart = async function(productId) {
+  if (!currentUserEmail) {
+    showToast("Please login to add to cart", "error");
+    return;
+  }
+  
+  const product = allProducts.find(p => p.id === productId);
+  if (!product) return;
+  
+  const existingItem = userCart.find(item => item.id === productId);
+  
+  try {
+    const cartRef = doc(db, "userCarts", currentUserEmail);
     
-    const product = allProducts.find(p => p.id === productId);
-    if (!product) return;
-    
-    const existingItem = userCart.find(item => item.id === productId);
-    
-    try {
-      const cartRef = doc(db, "userCarts", currentUserEmail);
-      
-      if (existingItem) {
-        // Update quantity
-        const updatedCart = userCart.map(item => 
-          item.id === productId ? {...item, quantity: item.quantity + 1} : item
-        );
-        await setDoc(cartRef, { items: updatedCart }, { merge: true });
-      } else {
-        // Add new item
-        const newItem = {
-          id: productId,
-          name: product.name,
-          price: product.price,
-          image: product.imageUrls?.[0] || product.imageUrl,
-          quantity: 1
-        };
-        const updatedCart = [...userCart, newItem];
-        await setDoc(cartRef, { items: updatedCart }, { merge: true });
-      }
-      
-      showToast("Added to cart!");
-      loadUserCartWishlist();
-    } catch (error) {
-      console.error("Error adding to cart:", error);
-      showToast("Error adding to cart", "error");
-    }
-  };
-
-  window.addToWishlist = async function(productId) {
-    if (!currentUserEmail) {
-      showToast("Please login to add to wishlist", "error");
-      return;
-    }
-    
-    const product = allProducts.find(p => p.id === productId);
-    if (!product) return;
-    
-    const existingItem = userWishlist.find(item => item.id === productId);
     if (existingItem) {
-      showToast("Already in wishlist", "warning");
-      return;
-    }
-    
-    try {
-      const wishlistRef = doc(db, "userWishlists", currentUserEmail);
+      const updatedCart = userCart.map(item => 
+        item.id === productId ? {...item, quantity: item.quantity + 1} : item
+      );
+      await setDoc(cartRef, { items: updatedCart }, { merge: true });
+    } else {
       const newItem = {
         id: productId,
         name: product.name,
         price: product.price,
-        image: product.imageUrls?.[0] || product.imageUrl
+        image: product.imageUrls?.[0] || product.imageUrl,
+        quantity: 1
       };
-      const updatedWishlist = [...userWishlist, newItem];
-      await setDoc(wishlistRef, { items: updatedWishlist }, { merge: true });
-      
-      showToast("Added to wishlist!");
-      loadUserCartWishlist();
-    } catch (error) {
-      console.error("Error adding to wishlist:", error);
-      showToast("Error adding to wishlist", "error");
-    }
-  };
-
-  async function loadUserCartWishlist() {
-    if (!currentUserEmail) return;
-    
-    try {
-      // Load cart
-      const cartRef = doc(db, "userCarts", currentUserEmail);
-      const cartSnap = await getDoc(cartRef);
-      userCart = cartSnap.exists() ? cartSnap.data().items || [] : [];
-      
-      // Load wishlist
-      const wishlistRef = doc(db, "userWishlists", currentUserEmail);
-      const wishlistSnap = await getDoc(wishlistRef);
-      userWishlist = wishlistSnap.exists() ? wishlistSnap.data().items || [] : [];
-      
-      updateCartWishlistCounts();
-    } catch (error) {
-      console.error("Error loading cart/wishlist:", error);
-    }
-  }
-
-  function updateCartWishlistCounts() {
-    const cartCount = userCart.reduce((sum, item) => sum + item.quantity, 0);
-    const wishlistCount = userWishlist.length;
-    
-    document.getElementById('cartButton').textContent = 
-      `🛒 View Cart (${cartCount})`;
-    document.getElementById('wishlistButton').textContent = 
-      `💖 View Wishlist (${wishlistCount})`;
-  }
-
-  window.showCart = function() {
-    cartModal.style.display = "flex";
-    wishlistModal.style.display = "none";
-    checkoutModal.style.display = "none";
-    renderCart();
-  };
-
-  window.hideCart = function() {
-    cartModal.style.display = "none";
-  };
-
-  window.showWishlist = function() {
-    wishlistModal.style.display = "flex";
-    cartModal.style.display = "none";
-    checkoutModal.style.display = "none";
-    renderWishlist();
-  };
-
-  window.hideWishlist = function() {
-    wishlistModal.style.display = "none";
-  };
-
-  function renderCart() {
-    const cartItemsDiv = document.getElementById("cartItems");
-    const cartTotalDiv = document.getElementById("cartTotal");
-    
-    if (userCart.length === 0) {
-      cartItemsDiv.innerHTML = "<p>Your cart is empty</p>";
-      cartTotalDiv.textContent = "";
-      return;
-    }
-    
-    cartItemsDiv.innerHTML = "";
-    let total = 0;
-    
-    userCart.forEach(item => {
-      const itemTotal = item.price * item.quantity;
-      total += itemTotal;
-      
-      cartItemsDiv.innerHTML += `
-        <div class="list-item">
-          <div style="display:flex;align-items:center;gap:10px;">
-            <img src="${item.image}" width="50" height="50" style="object-fit:cover;border-radius:6px;">
-            <div>
-              <div style="font-weight:bold;">${item.name}</div>
-              <div>₹${item.price} × ${item.quantity}</div>
-              <div class="subtotal">Subtotal: ₹${itemTotal}</div>
-            </div>
-          </div>
-          <div class="quantity-controls">
-            <button class="quantity-btn" onclick="updateCartItem('${item.id}', ${item.quantity - 1})">-</button>
-            <span>${item.quantity}</span>
-            <button class="quantity-btn" onclick="updateCartItem('${item.id}', ${item.quantity + 1})">+</button>
-            <button class="delete-btn" onclick="updateCartItem('${item.id}', 0)" style="margin-left:10px;">Remove</button>
-          </div>
-        </div>
-      `;
-    });
-    
-    cartTotalDiv.textContent = `Total: ₹${total}`;
-  }
-
-  window.updateCartItem = async function(productId, newQuantity) {
-    try {
-      const cartRef = doc(db, "userCarts", currentUserEmail);
-      let updatedCart;
-      
-      if (newQuantity <= 0) {
-        // Remove item
-        updatedCart = userCart.filter(item => item.id !== productId);
-      } else {
-        // Update quantity
-        updatedCart = userCart.map(item => 
-          item.id === productId ? {...item, quantity: newQuantity} : item
-        );
-      }
-      
+      const updatedCart = [...userCart, newItem];
       await setDoc(cartRef, { items: updatedCart }, { merge: true });
-      userCart = updatedCart;
-      renderCart();
-      updateCartWishlistCounts();
-    } catch (error) {
-      console.error("Error updating cart:", error);
-      showToast("Error updating cart", "error");
     }
-  };
+    
+    showToast("Added to cart!");
+    loadUserCartWishlist();
+  } catch (error) {
+    console.error("Error adding to cart:", error);
+    showToast("Error adding to cart", "error");
+  }
+};
 
-  function renderWishlist() {
-    const wishlistItemsDiv = document.getElementById("wishlistItems");
+window.addToWishlist = async function(productId) {
+  if (!currentUserEmail) {
+    showToast("Please login to add to wishlist", "error");
+    return;
+  }
+  
+  const product = allProducts.find(p => p.id === productId);
+  if (!product) return;
+  
+  const existingItem = userWishlist.find(item => item.id === productId);
+  if (existingItem) {
+    showToast("Already in wishlist", "warning");
+    return;
+  }
+  
+  try {
+    const wishlistRef = doc(db, "userWishlists", currentUserEmail);
+    const newItem = {
+      id: productId,
+      name: product.name,
+      price: product.price,
+      image: product.imageUrls?.[0] || product.imageUrl
+    };
+    const updatedWishlist = [...userWishlist, newItem];
+    await setDoc(wishlistRef, { items: updatedWishlist }, { merge: true });
     
-    if (userWishlist.length === 0) {
-      wishlistItemsDiv.innerHTML = "<p>Your wishlist is empty</p>";
-      return;
-    }
+    showToast("Added to wishlist!");
+    loadUserCartWishlist();
+  } catch (error) {
+    console.error("Error adding to wishlist:", error);
+    showToast("Error adding to wishlist", "error");
+  }
+};
+
+async function loadUserCartWishlist() {
+  if (!currentUserEmail) return;
+  
+  try {
+    const cartRef = doc(db, "userCarts", currentUserEmail);
+    const cartSnap = await getDoc(cartRef);
+    userCart = cartSnap.exists() ? cartSnap.data().items || [] : [];
     
-    wishlistItemsDiv.innerHTML = "";
+    const wishlistRef = doc(db, "userWishlists", currentUserEmail);
+    const wishlistSnap = await getDoc(wishlistRef);
+    userWishlist = wishlistSnap.exists() ? wishlistSnap.data().items || [] : [];
     
-    userWishlist.forEach(item => {
-      wishlistItemsDiv.innerHTML += `
-        <div class="list-item">
-          <div style="display:flex;align-items:center;gap:10px;">
-            <img src="${item.image}" width="50" height="50" style="object-fit:cover;border-radius:6px;">
-            <div>
-              <div style="font-weight:bold;">${item.name}</div>
-              <div>₹${item.price}</div>
-            </div>
-          </div>
+    updateCartWishlistCounts();
+  } catch (error) {
+    console.error("Error loading cart/wishlist:", error);
+  }
+}
+
+function updateCartWishlistCounts() {
+  const cartCount = userCart.reduce((sum, item) => sum + item.quantity, 0);
+  const wishlistCount = userWishlist.length;
+  
+  document.getElementById('cartButton').textContent = `🛒 View Cart (${cartCount})`;
+  document.getElementById('wishlistButton').textContent = `💖 View Wishlist (${wishlistCount})`;
+}
+
+window.showCart = function() {
+  document.getElementById("cartModal").style.display = "flex";
+  document.getElementById("wishlistModal").style.display = "none";
+  document.getElementById("checkoutModal").style.display = "none";
+  renderCart();
+};
+
+window.hideCart = function() {
+  document.getElementById("cartModal").style.display = "none";
+};
+
+window.showWishlist = function() {
+  document.getElementById("wishlistModal").style.display = "flex";
+  document.getElementById("cartModal").style.display = "none";
+  document.getElementById("checkoutModal").style.display = "none";
+  renderWishlist();
+};
+
+window.hideWishlist = function() {
+  document.getElementById("wishlistModal").style.display = "none";
+};
+
+function renderCart() {
+  const cartItemsDiv = document.getElementById("cartItems");
+  const cartTotalDiv = document.getElementById("cartTotal");
+  
+  if (userCart.length === 0) {
+    cartItemsDiv.innerHTML = "<p>Your cart is empty</p>";
+    cartTotalDiv.textContent = "";
+    return;
+  }
+  
+  cartItemsDiv.innerHTML = "";
+  let total = 0;
+  
+  userCart.forEach(item => {
+    const itemTotal = item.price * item.quantity;
+    total += itemTotal;
+    
+    cartItemsDiv.innerHTML += `
+      <div class="list-item">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <img src="${item.image}" width="50" height="50" style="object-fit:cover;border-radius:6px;">
           <div>
-            <button class="cart-btn" onclick="addToCart('${item.id}')">Add to Cart</button>
-            <button class="delete-btn" onclick="removeFromWishlist('${item.id}')">Remove</button>
+            <div style="font-weight:bold;">${item.name}</div>
+            <div>₹${item.price} × ${item.quantity}</div>
+            <div class="subtotal">Subtotal: ₹${itemTotal}</div>
           </div>
         </div>
-      `;
-    });
-  }
+        <div class="quantity-controls">
+          <button class="quantity-btn" onclick="updateCartItem('${item.id}', ${item.quantity - 1})">-</button>
+          <span>${item.quantity}</span>
+          <button class="quantity-btn" onclick="updateCartItem('${item.id}', ${item.quantity + 1})">+</button>
+          <button class="delete-btn" onclick="updateCartItem('${item.id}', 0)" style="margin-left:10px;">Remove</button>
+        </div>
+      </div>
+    `;
+  });
+  
+  cartTotalDiv.textContent = `Total: ₹${total}`;
+}
 
-  window.removeFromWishlist = async function(productId) {
-    try {
-      const wishlistRef = doc(db, "userWishlists", currentUserEmail);
-      const updatedWishlist = userWishlist.filter(item => item.id !== productId);
-      
-      await setDoc(wishlistRef, { items: updatedWishlist }, { merge: true });
-      userWishlist = updatedWishlist;
-      renderWishlist();
-      updateCartWishlistCounts();
-      showToast("Removed from wishlist");
-    } catch (error) {
-      console.error("Error removing from wishlist:", error);
-      showToast("Error removing from wishlist", "error");
-    }
-  };
-
-  // Checkout functions
-  window.checkout = function() {
-    if (userCart.length === 0) {
-      showToast("Your cart is empty", "error");
-      return;
-    }
+window.updateCartItem = async function(productId, newQuantity) {
+  try {
+    const cartRef = doc(db, "userCarts", currentUserEmail);
+    let updatedCart;
     
-    checkoutModal.style.display = "flex";
-    cartModal.style.display = "none";
-  };
-
-  window.cancelCheckout = function() {
-    checkoutModal.style.display = "none";
-    cartModal.style.display = "flex";
-  };
-
-  window.confirmOrder = async function() {
-    const address = document.getElementById("address").value.trim();
-    const pincode = document.getElementById("pincode").value.trim();
-    const paymentMethod = document.getElementById("paymentMethod").value;
-    const upiId = document.getElementById("upiId").value.trim();
-    
-    if (!address || !pincode) {
-      showToast("Please enter address and pincode", "error");
-      return;
-    }
-    
-    if (paymentMethod === "upi" && !upiId) {
-      showToast("Please enter UPI ID", "error");
-      return;
-    }
-    
-    try {
-      // Create order
-      const orderData = {
-        userEmail: currentUserEmail,
-        items: userCart,
-        address,
-        pincode,
-        paymentMethod,
-        upiId: paymentMethod === "upi" ? upiId : null,
-        status: "pending",
-        createdAt: new Date().toISOString()
-      };
-      
-      // Calculate total
-      orderData.total = userCart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-      
-      await addDoc(collection(db, "orders"), orderData);
-      
-      // Clear cart
-      const cartRef = doc(db, "userCarts", currentUserEmail);
-      await setDoc(cartRef, { items: [] }, { merge: true });
-      userCart = [];
-      
-      showToast("Order placed successfully!");
-      updateCartWishlistCounts();
-      checkoutModal.style.display = "none";
-      document.getElementById("address").value = "";
-      document.getElementById("pincode").value = "";
-      document.getElementById("upiId").value = "";
-    } catch (error) {
-      console.error("Error placing order:", error);
-      showToast("Error placing order", "error");
-    }
-  };
-
-  // Filtering and pagination
-  window.switchTab = function(tab) {
-    currentTab = tab;
-    currentPage = 1;
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-      btn.classList.toggle('active', btn.textContent.includes(tab === 'all' ? 'All' : 'My'));
-    });
-    applyFilters();
-  };
-
-  function applyFilters() {
-    const categoryFilter = document.getElementById("categoryFilter").value;
-    const priceFilter = document.getElementById("priceFilter").value;
-    const sortFilter = document.getElementById("sortFilter").value;
-    const searchQuery = document.getElementById("searchBar").value.toLowerCase();
-    
-    let filteredProducts = [...allProducts];
-    
-    // Apply tab filter
-    if (currentTab === 'my') {
-      filteredProducts = filteredProducts.filter(p => p.owner === currentUserEmail);
-    }
-    
-    // Apply category filter
-    if (categoryFilter !== 'all') {
-      filteredProducts = filteredProducts.filter(p => p.category === categoryFilter);
-    }
-    
-    // Apply price filter
-    if (priceFilter === 'low') {
-      filteredProducts = filteredProducts.filter(p => p.price < 500);
-    } else if (priceFilter === 'mid') {
-      filteredProducts = filteredProducts.filter(p => p.price >= 500 && p.price <= 2000);
-    } else if (priceFilter === 'high') {
-      filteredProducts = filteredProducts.filter(p => p.price > 2000);
-    }
-    
-    // Apply search filter
-    if (searchQuery) {
-      filteredProducts = filteredProducts.filter(p => 
-        p.name.toLowerCase().includes(searchQuery) || 
-        p.description.toLowerCase().includes(searchQuery)
+    if (newQuantity <= 0) {
+      updatedCart = userCart.filter(item => item.id !== productId);
+    } else {
+      updatedCart = userCart.map(item => 
+        item.id === productId ? {...item, quantity: newQuantity} : item
       );
     }
     
-    // Apply sorting
-    if (sortFilter === 'newest') {
-      filteredProducts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    } else if (sortFilter === 'oldest') {
-      filteredProducts.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-    } else if (sortFilter === 'price_asc') {
-      filteredProducts.sort((a, b) => a.price - b.price);
-    } else if (sortFilter === 'price_desc') {
-      filteredProducts.sort((a, b) => b.price - a.price);
-    }
-    
-    renderPagination(filteredProducts);
+    await setDoc(cartRef, { items: updatedCart }, { merge: true });
+    userCart = updatedCart;
+    renderCart();
+    updateCartWishlistCounts();
+  } catch (error) {
+    console.error("Error updating cart:", error);
+    showToast("Error updating cart", "error");
   }
+};
 
-  function renderPagination(filteredProducts) {
-    const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
-    const paginationDiv = document.getElementById("pagination");
-    paginationDiv.innerHTML = "";
-    
-    if (totalPages <= 1) {
-      renderProducts(filteredProducts);
-      return;
-    }
-    
-    for (let i = 1; i <= totalPages; i++) {
-      const btn = document.createElement("button");
-      btn.textContent = i;
-      btn.classList.toggle("active", i === currentPage);
-      btn.addEventListener("click", () => {
-        currentPage = i;
-        applyFilters();
-      });
-      paginationDiv.appendChild(btn);
-    }
-    
-    const startIdx = (currentPage - 1) * productsPerPage;
-    const endIdx = startIdx + productsPerPage;
-    const paginatedProducts = filteredProducts.slice(startIdx, endIdx);
-    
-    renderProducts(paginatedProducts);
+function renderWishlist() {
+  const wishlistItemsDiv = document.getElementById("wishlistItems");
+  
+  if (userWishlist.length === 0) {
+    wishlistItemsDiv.innerHTML = "<p>Your wishlist is empty</p>";
+    return;
   }
-
-  // Initialize filters event listeners
-  document.getElementById("categoryFilter").addEventListener("change", applyFilters);
-  document.getElementById("priceFilter").addEventListener("change", applyFilters);
-  document.getElementById("sortFilter").addEventListener("change", applyFilters);
-  document.getElementById("searchBar").addEventListener("input", applyFilters);
-
-  // Chatbot functions
-  window.toggleChatbot = function() {
-    const chatbotWindow = document.getElementById("chatbotWindow");
-    chatbotWindow.style.display = chatbotWindow.style.display === "flex" ? "none" : "flex";
-  };
-
-  function addBotMessage(text, showQuickReplies = true) {
-    const chatbotMessages = document.getElementById("chatbotMessages");
-    const messageDiv = document.createElement("div");
-    messageDiv.className = "message bot-message";
-    messageDiv.innerHTML = text;
-    
-    if (showQuickReplies) {
-      messageDiv.innerHTML += `
-        <div class="quick-replies">
-          <button class="quick-reply-btn" onclick="sendQuickReply('Pricing questions')">💰 Pricing</button>
-          <button class="quick-reply-btn" onclick="sendQuickReply('How to sell')">🛍️ Selling</button>
-          <button class="quick-reply-btn" onclick="sendQuickReply('Shipping info')">🚚 Shipping</button>
-          <button class="quick-reply-btn" onclick="sendQuickReply('Other help')">❓ Other Help</button>
+  
+  wishlistItemsDiv.innerHTML = "";
+  
+  userWishlist.forEach(item => {
+    wishlistItemsDiv.innerHTML += `
+      <div class="list-item">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <img src="${item.image}" width="50" height="50" style="object-fit:cover;border-radius:6px;">
+          <div>
+            <div style="font-weight:bold;">${item.name}</div>
+            <div>₹${item.price}</div>
+          </div>
         </div>
-      `;
-    }
+        <div>
+          <button class="cart-btn" onclick="addToCart('${item.id}')">Add to Cart</button>
+          <button class="delete-btn" onclick="removeFromWishlist('${item.id}')">Remove</button>
+        </div>
+      </div>
+    `;
+  });
+}
+
+window.removeFromWishlist = async function(productId) {
+  try {
+    const wishlistRef = doc(db, "userWishlists", currentUserEmail);
+    const updatedWishlist = userWishlist.filter(item => item.id !== productId);
     
-    chatbotMessages.appendChild(messageDiv);
-    chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+    await setDoc(wishlistRef, { items: updatedWishlist }, { merge: true });
+    userWishlist = updatedWishlist;
+    renderWishlist();
+    updateCartWishlistCounts();
+    showToast("Removed from wishlist");
+  } catch (error) {
+    console.error("Error removing from wishlist:", error);
+    showToast("Error removing from wishlist", "error");
   }
+};
 
-  function addUserMessage(text) {
-    const chatbotMessages = document.getElementById("chatbotMessages");
-    const messageDiv = document.createElement("div");
-    messageDiv.className = "message user-message";
-    messageDiv.textContent = text;
-    chatbotMessages.appendChild(messageDiv);
-    chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+window.checkout = function() {
+  if (userCart.length === 0) {
+    showToast("Your cart is empty", "error");
+    return;
   }
+  
+  document.getElementById("checkoutModal").style.display = "flex";
+  document.getElementById("cartModal").style.display = "none";
+};
 
-  window.sendQuickReply = function(option) {
-    addUserMessage(option);
-    
-    // Generate bot response after short delay
-    setTimeout(() => {
-      generateBotResponse(option);
-    }, 500);
-  };
+window.cancelCheckout = function() {
+  document.getElementById("checkoutModal").style.display = "none";
+  document.getElementById("cartModal").style.display = "flex";
+};
 
-  function generateBotResponse(option) {
-    let response = "";
-    
-    switch(option.toLowerCase()) {
-      case "pricing questions":
-      case "💰 pricing":
-        response = "Our AI pricing considers:<br>- Material costs<br>- Time investment<br>- Artisan skill level<br>- Market trends<br>Try our price predictor when listing products!";
-        break;
-        
-      case "how to sell":
-      case "🛍️ sell products":
-        response = "To sell with us:<br>1. Click 'Upload Product'<br>2. Add photos & details<br>3. Get AI pricing suggestion<br>4. Publish your listing!<br>We charge just 5% commission.";
-        break;
-        
-      case "shipping info":
-      case "🚚 shipping":
-        response = "Shipping details:<br>- India-wide delivery<br>- 3-7 business days<br>- ₹50-200 shipping fee<br>- Package tracking included<br>- Eco-friendly packaging";
-        break;
-        
-      case "payment options":
-      case "💳 payments":
-        response = "We accept:<br>- UPI (PhonePe/GPay/etc)<br>- Credit/Debit Cards<br>- Cash on Delivery<br>- Net Banking<br>All payments are secure!";
-        break;
-        
-      default:
-        response = "For more help, please:<br>- Visit our Help Center<br>- Email support@ruralhandmade.com<br>- Call +91 9876543210<br>We reply within 24 hours!";
-    }
-    
-    addBotMessage(response);
+window.confirmOrder = async function() {
+  const address = document.getElementById("address").value.trim();
+  const pincode = document.getElementById("pincode").value.trim();
+  const paymentMethod = document.getElementById("paymentMethod").value;
+  const upiId = document.getElementById("upiId").value.trim();
+  
+  if (!address || !pincode) {
+    showToast("Please enter address and pincode", "error");
+    return;
   }
+  
+  if (paymentMethod === "upi" && !upiId) {
+    showToast("Please enter UPI ID", "error");
+    return;
+  }
+  
+  try {
+    const orderData = {
+      userEmail: currentUserEmail,
+      items: userCart,
+      address,
+      pincode,
+      paymentMethod,
+      upiId: paymentMethod === "upi" ? upiId : null,
+      status: "pending",
+      createdAt: new Date().toISOString()
+    };
+    
+    orderData.total = userCart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    
+    await addDoc(collection(db, "orders"), orderData);
+    
+    const cartRef = doc(db, "userCarts", currentUserEmail);
+    await setDoc(cartRef, { items: [] }, { merge: true });
+    userCart = [];
+    
+    showToast("Order placed successfully!");
+    updateCartWishlistCounts();
+    document.getElementById("checkoutModal").style.display = "none";
+    document.getElementById("address").value = "";
+    document.getElementById("pincode").value = "";
+    document.getElementById("upiId").value = "";
+  } catch (error) {
+    console.error("Error placing order:", error);
+    showToast("Error placing order", "error");
+  }
+};
 
-  // Initialize chatbot toggle
+function toggleUPIField() {
+  document.getElementById("upiId").style.display = 
+    document.getElementById("paymentMethod").value === "upi" ? "block" : "none";
+}
+
+window.switchTab = function(tab) {
+  currentTab = tab;
+  currentPage = 1;
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.textContent.includes(tab === 'all' ? 'All' : 'My'));
+  });
+  applyFilters();
+};
+
+window.applyFilters = function() {
+  const categoryFilter = document.getElementById("categoryFilter").value;
+  const priceFilter = document.getElementById("priceFilter").value;
+  const sortFilter = document.getElementById("sortFilter").value;
+  const searchQuery = document.getElementById("searchBar").value.toLowerCase();
+  
+  let filteredProducts = [...allProducts];
+  
+  if (currentTab === 'my') {
+    filteredProducts = filteredProducts.filter(p => p.owner === currentUserEmail);
+  }
+  
+  if (categoryFilter !== 'all') {
+    filteredProducts = filteredProducts.filter(p => p.category === categoryFilter);
+  }
+  
+  if (priceFilter === 'low') {
+    filteredProducts = filteredProducts.filter(p => p.price < 500);
+  } else if (priceFilter === 'mid') {
+    filteredProducts = filteredProducts.filter(p => p.price >= 500 && p.price <= 2000);
+  } else if (priceFilter === 'high') {
+    filteredProducts = filteredProducts.filter(p => p.price > 2000);
+  }
+  
+  if (searchQuery) {
+    filteredProducts = filteredProducts.filter(p => 
+      p.name.toLowerCase().includes(searchQuery) || 
+      p.description.toLowerCase().includes(searchQuery)
+    );
+  }
+  
+  if (sortFilter === 'newest') {
+    filteredProducts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  } else if (sortFilter === 'oldest') {
+    filteredProducts.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+  } else if (sortFilter === 'price_asc') {
+    filteredProducts.sort((a, b) => a.price - b.price);
+  } else if (sortFilter === 'price_desc') {
+    filteredProducts.sort((a, b) => b.price - a.price);
+  }
+  
+  renderPagination(filteredProducts);
+}
+
+function renderPagination(filteredProducts) {
+  const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
+  const paginationDiv = document.getElementById("pagination");
+  paginationDiv.innerHTML = "";
+  
+  if (totalPages <= 1) {
+    renderProducts(filteredProducts);
+    return;
+  }
+  
+  for (let i = 1; i <= totalPages; i++) {
+    const btn = document.createElement("button");
+    btn.textContent = i;
+    btn.classList.toggle("active", i === currentPage);
+    btn.addEventListener("click", () => {
+      currentPage = i;
+      applyFilters();
+    });
+    paginationDiv.appendChild(btn);
+  }
+  
+  const startIdx = (currentPage - 1) * productsPerPage;
+  const endIdx = startIdx + productsPerPage;
+  const paginatedProducts = filteredProducts.slice(startIdx, endIdx);
+  
+  renderProducts(paginatedProducts);
+}
+
+/* Chatbot Functions */
+function setupChatbot() {
   document.getElementById("chatbotToggle").addEventListener("click", toggleChatbot);
+}
 
-  // Utility functions
-  function showToast(message, type = 'success') {
-    const toastContainer = document.getElementById('toastContainer');
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    toast.textContent = message;
-    toastContainer.appendChild(toast);
-    
-    void toast.offsetWidth;
-    toast.classList.add('show');
-    
+window.toggleChatbot = function() {
+  const chatbotWindow = document.getElementById("chatbotWindow");
+  chatbotWindow.style.display = chatbotWindow.style.display === "flex" ? "none" : "flex";
+  
+  // Scroll to bottom when opening
+  if (chatbotWindow.style.display === "flex") {
     setTimeout(() => {
-      toast.classList.remove('show');
-      setTimeout(() => toast.remove(), 300);
-    }, 3000);
+      const messages = document.getElementById("chatbotMessages");
+      messages.scrollTop = messages.scrollHeight;
+    }, 100);
   }
+};
+
+function addBotMessage(text, showQuickReplies = true) {
+  const messageDiv = document.createElement("div");
+  messageDiv.className = "message bot-message";
+  messageDiv.innerHTML = text;
+  
+  if (showQuickReplies) {
+    messageDiv.innerHTML += `
+      <div class="quick-replies">
+        <button class="quick-reply-btn" onclick="sendQuickReply('Pricing questions')">💰 Pricing</button>
+        <button class="quick-reply-btn" onclick="sendQuickReply('How to sell')">🛍️ Selling</button>
+        <button class="quick-reply-btn" onclick="sendQuickReply('Shipping info')">🚚 Shipping</button>
+      </div>
+    `;
+  }
+  
+  document.getElementById("chatbotMessages").appendChild(messageDiv);
+  document.getElementById("chatbotMessages").scrollTop = document.getElementById("chatbotMessages").scrollHeight;
+}
+
+function addUserMessage(text) {
+  const messageDiv = document.createElement("div");
+  messageDiv.className = "message user-message";
+  messageDiv.textContent = text;
+  document.getElementById("chatbotMessages").appendChild(messageDiv);
+  document.getElementById("chatbotMessages").scrollTop = document.getElementById("chatbotMessages").scrollHeight;
+}
+
+window.sendChatbotMessage = function() {
+  const input = document.getElementById("chatbotInput");
+  const message = input.value.trim();
+  
+  if (message) {
+    addUserMessage(message);
+    input.value = "";
+    
+    // Simulate bot thinking
+    setTimeout(() => {
+      generateBotResponse(message);
+    }, 800);
+  }
+};
+
+window.sendQuickReply = function(option) {
+  addUserMessage(option);
+  
+  setTimeout(() => {
+    generateBotResponse(option);
+  }, 500);
+};
+
+function generateBotResponse(option) {
+  let response = "";
+  const lowerOption = option.toLowerCase();
+  
+  if (lowerOption.includes("price") || lowerOption.includes("cost") || lowerOption.includes("💰")) {
+    response = "Our AI pricing considers:<br>- Material costs<br>- Time investment<br>- Artisan skill level<br>- Market trends<br><br>Try our price prediction tool for accurate estimates!";
+  } 
+  else if (lowerOption.includes("sell") || lowerOption.includes("list") || lowerOption.includes("🛍️")) {
+    response = "To sell with us:<br>1. Click 'Upload Product'<br>2. Add photos & details<br>3. Get AI pricing suggestion<br>4. Publish your listing!<br><br>You'll need to be logged in to sell products.";
+  } 
+  else if (lowerOption.includes("ship") || lowerOption.includes("deliver") || lowerOption.includes("🚚")) {
+    response = "Shipping details:<br>- India-wide delivery<br>- 3-7 business days<br>- ₹50-200 shipping fee<br>- Package tracking included<br><br>Shipping costs are calculated at checkout.";
+  }
+  else if (lowerOption.includes("hello") || lowerOption.includes("hi") || lowerOption.includes("hey")) {
+    response = "Hello there! How can I assist you today?";
+  }
+  else {
+    response = "I'm still learning! For more specific help, please email support@ruralhandmade.com or try these quick options:";
+  }
+  
+  addBotMessage(response, !(lowerOption.includes("hello") || lowerOption.includes("hi") || lowerOption.includes("hey")));
+}
+
+function showToast(message, type = 'success') {
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.textContent = message;
+  document.getElementById("toastContainer").appendChild(toast);
+  
+  void toast.offsetWidth;
+  toast.classList.add('show');
+  
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
 </script>
 </body>
 </html>
